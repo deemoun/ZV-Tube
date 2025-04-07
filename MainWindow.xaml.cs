@@ -68,7 +68,7 @@ namespace YouTubeDownloader
                     var psi = new ProcessStartInfo
                     {
                         FileName = ytDlpPath,
-                        Arguments = $"ytsearch10:\"{query}\" --print-json --skip-download",
+                        Arguments = $"ytsearch20:\"{query}\" --print-json --skip-download",
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,

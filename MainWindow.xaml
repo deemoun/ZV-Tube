@@ -74,14 +74,14 @@
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button x:Name="PlayVideoButton" Content="🎬 Играть видео" Width="120" Height="32" Margin="0,0,10,0"
-                            Click="PlayButtonVideo_Click"/>
+                            Click="PlayButtonVideo_Click" Cursor="Hand"/>
                     <Button x:Name="PlayAudioButton" Content="🎧 Играть аудио" Width="120" Height="32"
-                            Click="PlayButtonAudio_Click"/>
+                            Click="PlayButtonAudio_Click" Cursor="Hand"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
-                    <Button x:Name="DownloadButton" Content="💾 Скачать" Width="100" Height="32" Margin="0,0,10,0"
-                            Click="DownloadButton_Click"/>
+                    <Button x:Name="DownloadButton" Content="💾 Скачать аудио" Width="120" Height="32" Margin="0,0,10,0"
+                            Click="DownloadButton_Click" Cursor="Hand"/>
                     <Button x:Name="OpenFolderButton" Content="📁 Открыть папку" Width="120" Height="32"
                             Click="OpenFolderButton_Click"/>
                 </StackPanel>

@@ -21,6 +21,11 @@ namespace YouTubeDownloader
             InitializeComponent();
             Directory.CreateDirectory(downloadFolder);
             SetAllButtonsState(false);
+
+            // Кнопка "Открыть папку" активна только если папка существует
+            bool folderExists = Directory.Exists(downloadFolder);
+            OpenFolderButton.IsEnabled = folderExists;
+            OpenFolderButton.Opacity = folderExists ? 1.0 : 0.5;
         }
 
         private void SetAllButtonsState(bool enabled)
@@ -28,7 +33,6 @@ namespace YouTubeDownloader
             SetButtonState(PlayVideoButton, enabled);
             SetButtonState(PlayAudioButton, enabled);
             SetButtonState(DownloadButton, enabled);
-            SetButtonState(OpenFolderButton, enabled);
         }
 
         private void SetButtonState(Button button, bool enabled)
@@ -110,9 +114,6 @@ namespace YouTubeDownloader
                                 ResultsList.Items.Add(item);
                             }
                             StatusText.Text = $"Найдено видео: {localList.Count}";
-
-                            // Папку можно открыть — остальное только после выбора
-                            SetButtonState(OpenFolderButton, true);
                         }
                     });
                 }
@@ -185,7 +186,7 @@ namespace YouTubeDownloader
             }
             else
             {
-                StatusText.Text = "Папка загрузки не найдена.";
+                Directory.CreateDirectory(downloadFolder);
             }
         }
 

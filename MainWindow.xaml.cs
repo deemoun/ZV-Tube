@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace YouTubeDownloader
@@ -83,9 +85,7 @@ namespace YouTubeDownloader
                             {
                                 var video = JsonSerializer.Deserialize<YouTubeVideo>(line);
                                 if (video != null)
-                                {
                                     localList.Add(video);
-                                }
                             }
                             catch { }
                         }
@@ -110,8 +110,7 @@ namespace YouTubeDownloader
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Invoke(() =>
-                        StatusText.Text = $"Ошибка: {ex.Message}");
+                    Dispatcher.Invoke(() => StatusText.Text = $"Ошибка: {ex.Message}");
                 }
             });
         }
@@ -217,6 +216,46 @@ namespace YouTubeDownloader
                 StatusText.Text = $"Ошибка воспроизведения: {ex.Message}";
             }
         }
+
+        // ======= Сортировка =======
+
+        private GridViewColumnHeader lastHeaderClicked = null;
+        private ListSortDirection lastDirection = ListSortDirection.Ascending;
+
+        private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is GridViewColumnHeader header && header.Column != null)
+            {
+                string sortBy = (header.Column.DisplayMemberBinding as Binding)?.Path?.Path;
+                if (string.IsNullOrEmpty(sortBy)) return;
+
+                ListSortDirection direction;
+
+                if (header != lastHeaderClicked)
+                {
+                    direction = ListSortDirection.Ascending;
+                }
+                else
+                {
+                    direction = lastDirection == ListSortDirection.Ascending
+                        ? ListSortDirection.Descending
+                        : ListSortDirection.Ascending;
+                }
+
+                Sort(sortBy, direction);
+
+                lastHeaderClicked = header;
+                lastDirection = direction;
+            }
+        }
+
+        private void Sort(string sortBy, ListSortDirection direction)
+        {
+            ICollectionView dataView = CollectionViewSource.GetDefaultView(ResultsList.ItemsSource);
+            dataView.SortDescriptions.Clear();
+            dataView.SortDescriptions.Add(new SortDescription(sortBy, direction));
+            dataView.Refresh();
+        }
     }
 
     public class YouTubeVideo
@@ -224,11 +263,13 @@ namespace YouTubeDownloader
         public string id { get; set; }
         public string title { get; set; }
         public string uploader { get; set; }
+        public long view_count { get; set; }
         public string upload_date { get; set; }
 
         public string Title => title;
         public string Uploader => uploader;
         public string UploadDate => FormatDate(upload_date);
+        public string Views => view_count.ToString("N0");
 
         private string FormatDate(string raw)
         {

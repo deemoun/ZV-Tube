@@ -23,7 +23,6 @@ namespace YouTubeDownloader
         private ICollectionView? view;
         private Process? searchProcess;
         private bool isSearching = false;
-        private DateTime lastResultTime;
         private CancellationTokenSource? cts;
 
         public MainWindow()
@@ -38,30 +37,25 @@ namespace YouTubeDownloader
             OpenFolderButton.IsEnabled = Directory.Exists(downloadFolder);
             OpenFolderButton.Opacity = OpenFolderButton.IsEnabled ? 1.0 : 0.5;
 
-            SetInteractiveUIEnabled(false);
+            SetInteractiveUI(false);
             ResultsList.MouseDoubleClick += ResultsList_MouseDoubleClick;
         }
 
-        private void SetInteractiveUIEnabled(bool enabled)
+        private void SetInteractiveUI(bool enabled)
         {
-            // кнопки
             bool hasSelection = enabled && ResultsList.SelectedItem is YouTubeVideo;
 
             SetButtonState(PlayVideoButton, hasSelection);
             SetButtonState(PlayAudioButton, hasSelection);
             SetButtonState(DownloadButton, hasSelection);
 
-            // блокировка выбора
-            ResultsList.Focusable = enabled;
-            if (enabled)
-                ResultsList.PreviewMouseDown -= DisableSelectionWhileSearching;
-            else
-                ResultsList.PreviewMouseDown += DisableSelectionWhileSearching;
+            SetListState(enabled);
         }
 
-        private void DisableSelectionWhileSearching(object sender, MouseButtonEventArgs e)
+        private void SetListState(bool enabled)
         {
-            e.Handled = true;
+            ResultsList.IsEnabled = enabled;
+            ResultsList.Opacity = enabled ? 1.0 : 0.5;
         }
 
         private void SetButtonState(Button button, bool enabled)
@@ -88,11 +82,7 @@ namespace YouTubeDownloader
         {
             if (isSearching)
             {
-                TryStopProcess();
-                cts?.Cancel();
-                ResetSearchButton();
-                isSearching = false;
-                SetInteractiveUIEnabled(true);
+                StopSearch();
                 return;
             }
 
@@ -106,13 +96,23 @@ namespace YouTubeDownloader
             StatusText.Text = "Поиск...";
             videoList.Clear();
             view?.Refresh();
-            SetInteractiveUIEnabled(false);
+            SetInteractiveUI(false);
             isSearching = true;
             SetSearchButtonToStop();
-            lastResultTime = DateTime.Now;
             cts = new CancellationTokenSource();
 
             Task.Run(() => PerformSearch(query, cts.Token));
+        }
+
+        private void StopSearch()
+        {
+            cts?.Cancel();
+            TryStopProcess();
+            ResetSearchButton();
+            isSearching = false;
+
+            if (videoList.Count > 0)
+                SetInteractiveUI(true);
         }
 
         private void TryStopProcess()
@@ -162,10 +162,7 @@ namespace YouTubeDownloader
                     {
                         Dispatcher.Invoke(() =>
                         {
-                            TryStopProcess();
-                            isSearching = false;
-                            ResetSearchButton();
-                            SetInteractiveUIEnabled(true);
+                            StopSearch();
                             StatusText.Text = "Поиск остановлен по таймауту.";
                         });
                     }
@@ -185,11 +182,8 @@ namespace YouTubeDownloader
                                 {
                                     videoList.Add(video);
                                     view?.Refresh();
-                                    lastResultTime = DateTime.Now;
                                     StatusText.Text = $"Добавлено: {videoList.Count}";
-
-                                    if (videoList.Count > 0)
-                                        SetInteractiveUIEnabled(true);
+                                    // Не включаем UI здесь!
                                 });
                             }
                         }
@@ -201,7 +195,7 @@ namespace YouTubeDownloader
                 {
                     ResetSearchButton();
                     isSearching = false;
-                    SetInteractiveUIEnabled(true);
+                    SetInteractiveUI(true);
                     if (videoList.Count == 0)
                         StatusText.Text = "Видео не найдены.";
                 });
@@ -212,7 +206,7 @@ namespace YouTubeDownloader
                 {
                     ResetSearchButton();
                     isSearching = false;
-                    SetInteractiveUIEnabled(true);
+                    SetInteractiveUI(true);
                     StatusText.Text = $"Ошибка: {ex.Message}";
                 });
             }
@@ -227,7 +221,7 @@ namespace YouTubeDownloader
         private void ResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!isSearching)
-                SetInteractiveUIEnabled(true);
+                SetInteractiveUI(true);
         }
 
         private async void DownloadButton_Click(object sender, RoutedEventArgs e)
@@ -314,6 +308,17 @@ namespace YouTubeDownloader
 
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            if (e.OriginalSource is DependencyObject source)
+            {
+                DependencyObject current = source;
+                while (current != null)
+                {
+                    if (current is GridViewColumnHeader)
+                        return; // Не обрабатываем клик по заголовку
+                    current = VisualTreeHelper.GetParent(current);
+                }
+            }
+
             if (ResultsList.SelectedItem is not YouTubeVideo video) return;
 
             string url = $"https://www.youtube.com/watch?v={video.id}";

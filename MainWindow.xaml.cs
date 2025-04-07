@@ -111,7 +111,7 @@ namespace YouTubeDownloader
                             var view = CollectionViewSource.GetDefaultView(videoList);
                             ResultsList.ItemsSource = view;
 
-                            // ⬇️ Сортировка по убыванию просмотров по умолчанию
+                            // сортировка по убыванию просмотров по умолчанию
                             view.SortDescriptions.Clear();
                             view.SortDescriptions.Add(new SortDescription("view_count", ListSortDirection.Descending));
 
@@ -227,36 +227,52 @@ namespace YouTubeDownloader
             }
         }
 
-        // 📌 ДВОЙНОЙ клик по колонке сортирует по убыванию
+        // Обработка двойного клика — сортировка или открытие видео
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (e.OriginalSource is not DependencyObject clickedObject)
                 return;
 
             var header = FindAncestor<GridViewColumnHeader>(clickedObject);
-            if (header?.Column == null || header.Column.Header == null)
-                return;
-
-            string headerText = header.Column.Header.ToString().Trim();
-
-            string sortBy = headerText switch
+            if (header?.Column != null && header.Column.Header is string headerText)
             {
-                "👁 Просмотры" => "view_count",
-                "📅 Дата" => "upload_date",
-                _ => null
-            };
+                string sortBy = headerText.Trim() switch
+                {
+                    "👁 Просмотры" => "view_count",
+                    "📅 Дата" => "upload_date",
+                    _ => null
+                };
 
-            if (string.IsNullOrEmpty(sortBy)) return;
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    var view = CollectionViewSource.GetDefaultView(ResultsList.ItemsSource);
+                    view.SortDescriptions.Clear();
+                    view.SortDescriptions.Add(new SortDescription(sortBy, ListSortDirection.Descending));
+                    view.Refresh();
+                    return;
+                }
+            }
 
-            var view = CollectionViewSource.GetDefaultView(ResultsList.ItemsSource);
-            if (view == null) return;
-
-            view.SortDescriptions.Clear();
-            view.SortDescriptions.Add(new SortDescription(sortBy, ListSortDirection.Descending));
-            view.Refresh();
+            // Если клик не по заголовку — откроем видео в браузере
+            int index = ResultsList.SelectedIndex;
+            if (index >= 0 && index < videoList.Count)
+            {
+                string url = $"https://www.youtube.com/watch?v={videoList[index].id}";
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    StatusText.Text = $"Не удалось открыть браузер: {ex.Message}";
+                }
+            }
         }
 
-        // Находит ближайший GridViewColumnHeader по визуальному дереву
         private T FindAncestor<T>(DependencyObject current) where T : DependencyObject
         {
             while (current != null && current is not T)

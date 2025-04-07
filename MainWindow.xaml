@@ -6,15 +6,10 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Заголовок -->
             <RowDefinition Height="Auto"/>
-            <!-- Поиск -->
             <RowDefinition Height="Auto"/>
-            <!-- Статус -->
             <RowDefinition Height="*"/>
-            <!-- Список -->
             <RowDefinition Height="Auto"/>
-            <!-- Панель кнопок -->
         </Grid.RowDefinitions>
 
         <!-- Заголовок -->
@@ -34,12 +29,19 @@
                    Grid.Row="2" Foreground="Red" Margin="0,0,0,10" FontSize="12"/>
 
         <!-- Список результатов -->
-        <ListBox x:Name="ResultsList" Grid.Row="3"
-                 SelectionChanged="ResultsList_SelectionChanged"
-                 BorderBrush="#ccc" BorderThickness="1"
-                 Margin="0,0,0,10"/>
+        <ListView x:Name="ResultsList" Grid.Row="3"
+                  SelectionChanged="ResultsList_SelectionChanged"
+                  Margin="0,0,0,10" BorderBrush="#ccc" BorderThickness="1">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="🎬 Название" DisplayMemberBinding="{Binding Title}" Width="300"/>
+                    <GridViewColumn Header="📺 Канал" DisplayMemberBinding="{Binding Uploader}" Width="200"/>
+                    <GridViewColumn Header="📅 Дата" DisplayMemberBinding="{Binding UploadDate}" Width="100"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
 
-        <!-- Панель кнопок внизу -->
+        <!-- Панель кнопок -->
         <Border Grid.Row="4" Background="#f2f2f2" Padding="10" CornerRadius="5">
             <Grid>
                 <Grid.ColumnDefinitions>

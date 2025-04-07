@@ -22,7 +22,6 @@ namespace YouTubeDownloader
             Directory.CreateDirectory(downloadFolder);
             SetAllButtonsState(false);
 
-            // Кнопка "Открыть папку" активна только если папка существует
             bool folderExists = Directory.Exists(downloadFolder);
             OpenFolderButton.IsEnabled = folderExists;
             OpenFolderButton.Opacity = folderExists ? 1.0 : 0.5;
@@ -51,7 +50,7 @@ namespace YouTubeDownloader
             }
 
             StatusText.Text = "Поиск...";
-            ResultsList.Items.Clear();
+            ResultsList.ItemsSource = null;
             videoList.Clear();
             SetAllButtonsState(false);
 
@@ -74,7 +73,6 @@ namespace YouTubeDownloader
                         throw new Exception("yt-dlp не запустился.");
 
                     var localList = new List<YouTubeVideo>();
-                    var localDisplay = new List<string>();
 
                     while (!process.StandardOutput.EndOfStream)
                     {
@@ -87,13 +85,9 @@ namespace YouTubeDownloader
                                 if (video != null)
                                 {
                                     localList.Add(video);
-                                    localDisplay.Add($"{video.title} — {video.uploader} — {video.view_count:N0} просмотров");
                                 }
                             }
-                            catch
-                            {
-                                // игнорируем ошибки
-                            }
+                            catch { }
                         }
                     }
 
@@ -109,10 +103,7 @@ namespace YouTubeDownloader
                         else
                         {
                             videoList = localList;
-                            foreach (var item in localDisplay)
-                            {
-                                ResultsList.Items.Add(item);
-                            }
+                            ResultsList.ItemsSource = videoList;
                             StatusText.Text = $"Найдено видео: {localList.Count}";
                         }
                     });
@@ -128,9 +119,7 @@ namespace YouTubeDownloader
         private void SearchBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
-            {
                 SearchButton_Click(sender, e);
-            }
         }
 
         private void ResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -180,14 +169,12 @@ namespace YouTubeDownloader
 
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            if (Directory.Exists(downloadFolder))
-            {
-                Process.Start("explorer.exe", downloadFolder);
-            }
-            else
+            if (!Directory.Exists(downloadFolder))
             {
                 Directory.CreateDirectory(downloadFolder);
             }
+
+            Process.Start("explorer.exe", downloadFolder);
         }
 
         private void PlayButtonVideo_Click(object sender, RoutedEventArgs e)
@@ -237,6 +224,18 @@ namespace YouTubeDownloader
         public string id { get; set; }
         public string title { get; set; }
         public string uploader { get; set; }
-        public long view_count { get; set; }
+        public string upload_date { get; set; }
+
+        public string Title => title;
+        public string Uploader => uploader;
+        public string UploadDate => FormatDate(upload_date);
+
+        private string FormatDate(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw) || raw.Length != 8)
+                return string.Empty;
+
+            return $"{raw[..4]}.{raw.Substring(4, 2)}.{raw.Substring(6, 2)}";
+        }
     }
 }

@@ -338,6 +338,14 @@ namespace YouTubeDownloader
 
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            // Проверка, что клик был по элементу списка, а не по заголовку
+            if (e.OriginalSource is DependencyObject source)
+            {
+                var listViewItem = ItemsControl.ContainerFromElement(ResultsList, source) as ListViewItem;
+                if (listViewItem == null)
+                    return;
+            }
+
             if (ResultsList.SelectedItem is not YouTubeVideo video) return;
 
             string url = $"https://www.youtube.com/watch?v={video.id}";
@@ -354,6 +362,7 @@ namespace YouTubeDownloader
                 StatusText.Text = $"Не удалось открыть браузер: {ex.Message}";
             }
         }
+
     }
 
     public class YouTubeVideo

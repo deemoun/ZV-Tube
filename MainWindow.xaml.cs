@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace YouTubeDownloader
 {
@@ -24,9 +25,13 @@ namespace YouTubeDownloader
             Directory.CreateDirectory(downloadFolder);
             SetAllButtonsState(false);
 
-            bool folderExists = Directory.Exists(downloadFolder);
-            OpenFolderButton.IsEnabled = folderExists;
-            OpenFolderButton.Opacity = folderExists ? 1.0 : 0.5;
+            if (Directory.Exists(downloadFolder))
+            {
+                OpenFolderButton.IsEnabled = true;
+                OpenFolderButton.Opacity = 1.0;
+            }
+
+            ResultsList.MouseDoubleClick += ResultsList_MouseDoubleClick;
         }
 
         private void SetAllButtonsState(bool enabled)
@@ -103,14 +108,21 @@ namespace YouTubeDownloader
                         else
                         {
                             videoList = localList;
-                            ResultsList.ItemsSource = videoList;
+                            var view = CollectionViewSource.GetDefaultView(videoList);
+                            ResultsList.ItemsSource = view;
+
+                            // ⬇️ Сортировка по убыванию просмотров по умолчанию
+                            view.SortDescriptions.Clear();
+                            view.SortDescriptions.Add(new SortDescription("view_count", ListSortDirection.Descending));
+
                             StatusText.Text = $"Найдено видео: {localList.Count}";
                         }
                     });
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Invoke(() => StatusText.Text = $"Ошибка: {ex.Message}");
+                    Dispatcher.Invoke(() =>
+                        StatusText.Text = $"Ошибка: {ex.Message}");
                 }
             });
         }
@@ -169,9 +181,7 @@ namespace YouTubeDownloader
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
             if (!Directory.Exists(downloadFolder))
-            {
                 Directory.CreateDirectory(downloadFolder);
-            }
 
             Process.Start("explorer.exe", downloadFolder);
         }
@@ -217,44 +227,43 @@ namespace YouTubeDownloader
             }
         }
 
-        // ======= Сортировка =======
-
-        private GridViewColumnHeader lastHeaderClicked = null;
-        private ListSortDirection lastDirection = ListSortDirection.Ascending;
-
+        // 📌 ДВОЙНОЙ клик по колонке сортирует по убыванию
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (e.OriginalSource is GridViewColumnHeader header && header.Column != null)
+            if (e.OriginalSource is not DependencyObject clickedObject)
+                return;
+
+            var header = FindAncestor<GridViewColumnHeader>(clickedObject);
+            if (header?.Column == null || header.Column.Header == null)
+                return;
+
+            string headerText = header.Column.Header.ToString().Trim();
+
+            string sortBy = headerText switch
             {
-                string sortBy = (header.Column.DisplayMemberBinding as Binding)?.Path?.Path;
-                if (string.IsNullOrEmpty(sortBy)) return;
+                "👁 Просмотры" => "view_count",
+                "📅 Дата" => "upload_date",
+                _ => null
+            };
 
-                ListSortDirection direction;
+            if (string.IsNullOrEmpty(sortBy)) return;
 
-                if (header != lastHeaderClicked)
-                {
-                    direction = ListSortDirection.Ascending;
-                }
-                else
-                {
-                    direction = lastDirection == ListSortDirection.Ascending
-                        ? ListSortDirection.Descending
-                        : ListSortDirection.Ascending;
-                }
+            var view = CollectionViewSource.GetDefaultView(ResultsList.ItemsSource);
+            if (view == null) return;
 
-                Sort(sortBy, direction);
-
-                lastHeaderClicked = header;
-                lastDirection = direction;
-            }
+            view.SortDescriptions.Clear();
+            view.SortDescriptions.Add(new SortDescription(sortBy, ListSortDirection.Descending));
+            view.Refresh();
         }
 
-        private void Sort(string sortBy, ListSortDirection direction)
+        // Находит ближайший GridViewColumnHeader по визуальному дереву
+        private T FindAncestor<T>(DependencyObject current) where T : DependencyObject
         {
-            ICollectionView dataView = CollectionViewSource.GetDefaultView(ResultsList.ItemsSource);
-            dataView.SortDescriptions.Clear();
-            dataView.SortDescriptions.Add(new SortDescription(sortBy, direction));
-            dataView.Refresh();
+            while (current != null && current is not T)
+            {
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return current as T;
         }
     }
 
@@ -268,15 +277,16 @@ namespace YouTubeDownloader
 
         public string Title => title;
         public string Uploader => uploader;
-        public string UploadDate => FormatDate(upload_date);
         public string Views => view_count.ToString("N0");
 
-        private string FormatDate(string raw)
+        public string UploadDate
         {
-            if (string.IsNullOrWhiteSpace(raw) || raw.Length != 8)
-                return string.Empty;
-
-            return $"{raw[..4]}.{raw.Substring(4, 2)}.{raw.Substring(6, 2)}";
+            get
+            {
+                if (string.IsNullOrWhiteSpace(upload_date) || upload_date.Length != 8)
+                    return "";
+                return $"{upload_date[..4]}.{upload_date.Substring(4, 2)}.{upload_date.Substring(6, 2)}";
+            }
         }
     }
 }

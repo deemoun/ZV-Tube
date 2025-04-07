@@ -18,8 +18,7 @@
             <TextBox x:Name="SearchBox" Width="450" Height="30" Margin="0,0,10,0"
                      KeyDown="SearchBox_KeyDown"/>
             <Button x:Name="SearchButton" Content="🔎 Поиск" Width="100" Height="30" Cursor="Hand"
-                    Click="SearchButton_Click"
-                    ToolTip="Найти видео по названию" VerticalContentAlignment="Center"/>
+                    Click="SearchButton_Click"/>
         </StackPanel>
 
         <TextBlock x:Name="StatusText" Text="Результаты будут отображены после осуществления поиска"
@@ -30,14 +29,37 @@
                   Grid.Row="3"
                   SelectionChanged="ResultsList_SelectionChanged"
                   Margin="0,0,0,10"
-                  BorderBrush="#ccc" BorderThickness="1"
-                  MouseDoubleClick="ResultsList_MouseDoubleClick">
+                  BorderBrush="#ccc" BorderThickness="1">
             <ListView.View>
-                <GridView x:Name="ResultsGridView">
-                    <GridViewColumn Header="🎬 Название" DisplayMemberBinding="{Binding Title}" Width="300"/>
-                    <GridViewColumn Header="📺 Канал" DisplayMemberBinding="{Binding Uploader}" Width="180"/>
-                    <GridViewColumn Header="👁 Просмотры" DisplayMemberBinding="{Binding Views}" Width="100"/>
-                    <GridViewColumn Header="📅 Дата" DisplayMemberBinding="{Binding UploadDate}" Width="100"/>
+                <GridView>
+                    <GridViewColumn Header="🎬 Название" Width="280">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Title}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="📺 Канал" Width="180">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Uploader}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="👁 Просмотры" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Views}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="📅 Дата" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding UploadDate}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -52,20 +74,16 @@
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button x:Name="PlayVideoButton" Content="🎬 Играть видео" Width="120" Height="32" Margin="0,0,10,0"
-                            Click="PlayButtonVideo_Click"
-                            ToolTip="Воспроизвести видео через mpv"/>
+                            Click="PlayButtonVideo_Click"/>
                     <Button x:Name="PlayAudioButton" Content="🎧 Играть аудио" Width="120" Height="32"
-                            Click="PlayButtonAudio_Click"
-                            ToolTip="Воспроизвести только звук через mpv"/>
+                            Click="PlayButtonAudio_Click"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
                     <Button x:Name="DownloadButton" Content="💾 Скачать" Width="100" Height="32" Margin="0,0,10,0"
-                            Click="DownloadButton_Click"
-                            ToolTip="Скачать выбранное видео как аудио"/>
-                    <Button x:Name="OpenFolderButton" Content="📁 Открыть папку" Width="120" Height="32" Cursor="Hand"
-                            Click="OpenFolderButton_Click"
-                            ToolTip="Открыть папку с загруженными файлами"/>
+                            Click="DownloadButton_Click"/>
+                    <Button x:Name="OpenFolderButton" Content="📁 Открыть папку" Width="120" Height="32"
+                            Click="OpenFolderButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>

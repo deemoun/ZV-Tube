@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,39 +16,52 @@ namespace YouTubeDownloader
 {
     public partial class MainWindow : Window
     {
-        private List<YouTubeVideo> videoList = new();
-        private ICollectionView? view;
+        private readonly List<YouTubeVideo> videoList = new();
         private readonly string ytDlpPath = "yt-dlp.exe";
         private readonly string downloadFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "downloads");
 
+        private ICollectionView? view;
         private Process? searchProcess;
         private bool isSearching = false;
         private DateTime lastResultTime;
+        private CancellationTokenSource? cts;
 
         public MainWindow()
         {
             InitializeComponent();
             Directory.CreateDirectory(downloadFolder);
-            SetAllButtonsState(false);
 
             ResultsList.ItemsSource = videoList;
             view = CollectionViewSource.GetDefaultView(ResultsList.ItemsSource);
-            view.SortDescriptions.Add(new SortDescription("view_count", ListSortDirection.Descending));
+            view.SortDescriptions.Add(new SortDescription(nameof(YouTubeVideo.view_count), ListSortDirection.Descending));
 
-            if (Directory.Exists(downloadFolder))
-            {
-                OpenFolderButton.IsEnabled = true;
-                OpenFolderButton.Opacity = 1.0;
-            }
+            OpenFolderButton.IsEnabled = Directory.Exists(downloadFolder);
+            OpenFolderButton.Opacity = OpenFolderButton.IsEnabled ? 1.0 : 0.5;
 
+            SetInteractiveUIEnabled(false);
             ResultsList.MouseDoubleClick += ResultsList_MouseDoubleClick;
         }
 
-        private void SetAllButtonsState(bool enabled)
+        private void SetInteractiveUIEnabled(bool enabled)
         {
-            SetButtonState(PlayVideoButton, enabled);
-            SetButtonState(PlayAudioButton, enabled);
-            SetButtonState(DownloadButton, enabled);
+            // кнопки
+            bool hasSelection = enabled && ResultsList.SelectedItem is YouTubeVideo;
+
+            SetButtonState(PlayVideoButton, hasSelection);
+            SetButtonState(PlayAudioButton, hasSelection);
+            SetButtonState(DownloadButton, hasSelection);
+
+            // блокировка выбора
+            ResultsList.Focusable = enabled;
+            if (enabled)
+                ResultsList.PreviewMouseDown -= DisableSelectionWhileSearching;
+            else
+                ResultsList.PreviewMouseDown += DisableSelectionWhileSearching;
+        }
+
+        private void DisableSelectionWhileSearching(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
         }
 
         private void SetButtonState(Button button, bool enabled)
@@ -74,27 +88,11 @@ namespace YouTubeDownloader
         {
             if (isSearching)
             {
-                if (searchProcess != null && !searchProcess.HasExited)
-                {
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = "taskkill",
-                            Arguments = $"/PID {searchProcess.Id} /T /F",
-                            CreateNoWindow = true,
-                            UseShellExecute = false
-                        });
-                        StatusText.Text = "Поиск остановлен.";
-                    }
-                    catch (Exception ex)
-                    {
-                        StatusText.Text = $"Ошибка остановки: {ex.Message}";
-                    }
-                }
-
+                TryStopProcess();
+                cts?.Cancel();
                 ResetSearchButton();
                 isSearching = false;
+                SetInteractiveUIEnabled(true);
                 return;
             }
 
@@ -108,112 +106,116 @@ namespace YouTubeDownloader
             StatusText.Text = "Поиск...";
             videoList.Clear();
             view?.Refresh();
-            SetAllButtonsState(false);
-
+            SetInteractiveUIEnabled(false);
             isSearching = true;
             SetSearchButtonToStop();
             lastResultTime = DateTime.Now;
+            cts = new CancellationTokenSource();
 
-            Task.Run(() =>
+            Task.Run(() => PerformSearch(query, cts.Token));
+        }
+
+        private void TryStopProcess()
+        {
+            if (searchProcess != null && !searchProcess.HasExited)
             {
                 try
                 {
-                    var psi = new ProcessStartInfo
+                    Process.Start(new ProcessStartInfo
                     {
-                        FileName = ytDlpPath,
-                        Arguments = $"ytsearch30:\"{query}\" --print-json --skip-download",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true
-                    };
-
-                    searchProcess = Process.Start(psi);
-                    if (searchProcess == null)
-                        throw new Exception("yt-dlp не запустился.");
-
-                    while (!searchProcess.StandardOutput.EndOfStream)
-                    {
-                        // Таймаут 60 секунд без новых результатов
-                        if ((DateTime.Now - lastResultTime).TotalSeconds > 60)
-                        {
-                            try
-                            {
-                                if (!searchProcess.HasExited)
-                                {
-                                    Process.Start(new ProcessStartInfo
-                                    {
-                                        FileName = "taskkill",
-                                        Arguments = $"/PID {searchProcess.Id} /T /F",
-                                        CreateNoWindow = true,
-                                        UseShellExecute = false
-                                    });
-                                }
-                                Dispatcher.Invoke(() =>
-                                {
-                                    StatusText.Text = "Поиск остановлен по таймауту (60 сек).";
-                                    ResetSearchButton();
-                                    isSearching = false;
-                                });
-                                return;
-                            }
-                            catch (Exception ex)
-                            {
-                                Dispatcher.Invoke(() =>
-                                {
-                                    StatusText.Text = $"Ошибка при автоостановке: {ex.Message}";
-                                    ResetSearchButton();
-                                    isSearching = false;
-                                });
-                                return;
-                            }
-                        }
-
-                        string? line = searchProcess.StandardOutput.ReadLine();
-                        if (line?.Trim().StartsWith("{") == true)
-                        {
-                            try
-                            {
-                                var video = JsonSerializer.Deserialize<YouTubeVideo>(line);
-                                if (video != null)
-                                {
-                                    Dispatcher.Invoke(() =>
-                                    {
-                                        videoList.Add(video);
-                                        view?.Refresh();
-                                        lastResultTime = DateTime.Now;
-                                        StatusText.Text = $"Добавлено: {videoList.Count}";
-
-                                        if (videoList.Count > 0)
-                                            SetAllButtonsState(true);
-                                    });
-                                }
-                            }
-                            catch { }
-                        }
-                    }
-
-                    searchProcess.WaitForExit();
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (videoList.Count == 0)
-                            StatusText.Text = "Видео не найдены.";
-
-                        ResetSearchButton();
-                        isSearching = false;
+                        FileName = "taskkill",
+                        Arguments = $"/PID {searchProcess.Id} /T /F",
+                        CreateNoWindow = true,
+                        UseShellExecute = false
                     });
+                    StatusText.Text = "Поиск остановлен.";
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        StatusText.Text = $"Ошибка: {ex.Message}";
-                        ResetSearchButton();
-                        isSearching = false;
-                    });
+                    StatusText.Text = $"Ошибка остановки: {ex.Message}";
                 }
-            });
+            }
+        }
+
+        private void PerformSearch(string query, CancellationToken token)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = ytDlpPath,
+                    Arguments = $"ytsearch30:\"{query}\" --print-json --skip-download",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                searchProcess = Process.Start(psi);
+                if (searchProcess == null)
+                    throw new Exception("yt-dlp не запустился.");
+
+                Task.Run(async () =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(60), token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            TryStopProcess();
+                            isSearching = false;
+                            ResetSearchButton();
+                            SetInteractiveUIEnabled(true);
+                            StatusText.Text = "Поиск остановлен по таймауту.";
+                        });
+                    }
+                });
+
+                while (!searchProcess.StandardOutput.EndOfStream && !token.IsCancellationRequested)
+                {
+                    string? line = searchProcess.StandardOutput.ReadLine();
+                    if (line?.Trim().StartsWith("{") == true)
+                    {
+                        try
+                        {
+                            var video = JsonSerializer.Deserialize<YouTubeVideo>(line);
+                            if (video != null)
+                            {
+                                Dispatcher.Invoke(() =>
+                                {
+                                    videoList.Add(video);
+                                    view?.Refresh();
+                                    lastResultTime = DateTime.Now;
+                                    StatusText.Text = $"Добавлено: {videoList.Count}";
+
+                                    if (videoList.Count > 0)
+                                        SetInteractiveUIEnabled(true);
+                                });
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    ResetSearchButton();
+                    isSearching = false;
+                    SetInteractiveUIEnabled(true);
+                    if (videoList.Count == 0)
+                        StatusText.Text = "Видео не найдены.";
+                });
+            }
+            catch (Exception ex)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    ResetSearchButton();
+                    isSearching = false;
+                    SetInteractiveUIEnabled(true);
+                    StatusText.Text = $"Ошибка: {ex.Message}";
+                });
+            }
         }
 
         private void SearchBox_KeyDown(object sender, KeyEventArgs e)
@@ -224,22 +226,18 @@ namespace YouTubeDownloader
 
         private void ResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            bool selected = ResultsList.SelectedIndex >= 0;
-            SetButtonState(PlayVideoButton, selected);
-            SetButtonState(PlayAudioButton, selected);
-            SetButtonState(DownloadButton, selected);
+            if (!isSearching)
+                SetInteractiveUIEnabled(true);
         }
 
         private async void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
-            int index = ResultsList.SelectedIndex;
-            if (index < 0 || index >= videoList.Count)
+            if (ResultsList.SelectedItem is not YouTubeVideo video)
             {
-                StatusText.Text = "Выберите видео для загрузки.";
+                StatusText.Text = "Выберите видео.";
                 return;
             }
 
-            var video = videoList[index];
             string url = $"https://www.youtube.com/watch?v={video.id}";
             string safeTitle = string.Join("_", video.title.Split(Path.GetInvalidFileNameChars()));
             string outputPath = Path.Combine(downloadFolder, $"{safeTitle}.%(ext)s");
@@ -287,14 +285,12 @@ namespace YouTubeDownloader
 
         private void PlayWithMpv(string extraArg)
         {
-            int index = ResultsList.SelectedIndex;
-            if (index < 0 || index >= videoList.Count)
+            if (ResultsList.SelectedItem is not YouTubeVideo video)
             {
                 StatusText.Text = "Выберите видео для воспроизведения.";
                 return;
             }
 
-            var video = videoList[index];
             string url = $"https://www.youtube.com/watch?v={video.id}";
 
             try
@@ -318,22 +314,20 @@ namespace YouTubeDownloader
 
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            int index = ResultsList.SelectedIndex;
-            if (index >= 0 && index < videoList.Count)
+            if (ResultsList.SelectedItem is not YouTubeVideo video) return;
+
+            string url = $"https://www.youtube.com/watch?v={video.id}";
+            try
             {
-                string url = $"https://www.youtube.com/watch?v={videoList[index].id}";
-                try
+                Process.Start(new ProcessStartInfo
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = url,
-                        UseShellExecute = true
-                    });
-                }
-                catch (Exception ex)
-                {
-                    StatusText.Text = $"Не удалось открыть браузер: {ex.Message}";
-                }
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"Не удалось открыть браузер: {ex.Message}";
             }
         }
     }
@@ -350,14 +344,9 @@ namespace YouTubeDownloader
         public string Uploader => uploader;
         public string Views => view_count.ToString("N0");
 
-        public string UploadDate
-        {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(upload_date) || upload_date.Length != 8)
-                    return "";
-                return $"{upload_date[..4]}.{upload_date.Substring(4, 2)}.{upload_date.Substring(6, 2)}";
-            }
-        }
+        public string UploadDate =>
+            string.IsNullOrWhiteSpace(upload_date) || upload_date.Length != 8
+                ? ""
+                : $"{upload_date[..4]}.{upload_date.Substring(4, 2)}.{upload_date.Substring(6, 2)}";
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -16,7 +16,7 @@ namespace YouTubeDownloader
 {
     public partial class MainWindow : Window
     {
-        private readonly List<YouTubeVideo> videoList = new();
+        private readonly ObservableCollection<YouTubeVideo> videoList = new();
         private readonly string ytDlpPath = "yt-dlp.exe";
         private readonly string downloadFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "downloads");
 
@@ -25,25 +25,54 @@ namespace YouTubeDownloader
         private bool isSearching = false;
         private CancellationTokenSource? cts;
 
-        private GridViewColumnHeader? lastHeaderClicked = null;
-        private ListSortDirection lastDirection = ListSortDirection.Descending;
-
         public MainWindow()
         {
             InitializeComponent();
             Directory.CreateDirectory(downloadFolder);
 
             ResultsList.ItemsSource = videoList;
-            view = CollectionViewSource.GetDefaultView(ResultsList.ItemsSource);
+            view = CollectionViewSource.GetDefaultView(videoList);
             view.SortDescriptions.Add(new SortDescription(nameof(YouTubeVideo.view_count), ListSortDirection.Descending));
 
             OpenFolderButton.IsEnabled = Directory.Exists(downloadFolder);
             OpenFolderButton.Opacity = OpenFolderButton.IsEnabled ? 1.0 : 0.5;
 
             SetInteractiveUI(false);
-
             ResultsList.MouseDoubleClick += ResultsList_MouseDoubleClick;
-            ResultsList.AddHandler(GridViewColumnHeader.ClickEvent, new RoutedEventHandler(GridViewColumnHeader_Click));
+            AddHandler(GridViewColumnHeader.ClickEvent, new RoutedEventHandler(GridViewColumnHeader_Click));
+        }
+
+        private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is GridViewColumnHeader header && header.Column != null)
+            {
+                string sortBy = header.Column.Header switch
+                {
+                    string h when h.Contains("Название") => nameof(YouTubeVideo.title),
+                    string h when h.Contains("Канал") => nameof(YouTubeVideo.uploader),
+                    string h when h.Contains("Просмотры") => nameof(YouTubeVideo.view_count),
+                    string h when h.Contains("Дата") => nameof(YouTubeVideo.upload_date),
+                    _ => null
+                };
+
+                if (sortBy == null) return;
+
+                if (view!.SortDescriptions.Count > 0 && view.SortDescriptions[0].PropertyName == sortBy)
+                {
+                    var current = view.SortDescriptions[0];
+                    view.SortDescriptions.Clear();
+                    view.SortDescriptions.Add(new SortDescription(sortBy, current.Direction == ListSortDirection.Ascending
+                        ? ListSortDirection.Descending
+                        : ListSortDirection.Ascending));
+                }
+                else
+                {
+                    view!.SortDescriptions.Clear();
+                    view.SortDescriptions.Add(new SortDescription(sortBy, ListSortDirection.Descending));
+                }
+
+                view.Refresh();
+            }
         }
 
         private void SetInteractiveUI(bool enabled)
@@ -54,13 +83,8 @@ namespace YouTubeDownloader
             SetButtonState(PlayAudioButton, hasSelection);
             SetButtonState(DownloadButton, hasSelection);
 
-            SetListState(enabled);
-        }
-
-        private void SetListState(bool enabled)
-        {
-            ResultsList.IsEnabled = enabled;
-            ResultsList.Opacity = enabled ? 1.0 : 0.5;
+            ResultsContainer.IsEnabled = enabled;
+            ResultsContainer.Opacity = enabled ? 1.0 : 0.5;
         }
 
         private void SetButtonState(Button button, bool enabled)
@@ -186,7 +210,6 @@ namespace YouTubeDownloader
                                 Dispatcher.Invoke(() =>
                                 {
                                     videoList.Add(video);
-                                    view?.Refresh();
                                     StatusText.Text = $"Добавлено: {videoList.Count}";
                                 });
                             }
@@ -197,11 +220,14 @@ namespace YouTubeDownloader
 
                 Dispatcher.Invoke(() =>
                 {
-                    ResetSearchButton();
-                    isSearching = false;
-                    SetInteractiveUI(true);
-                    if (videoList.Count == 0)
-                        StatusText.Text = "Видео не найдены.";
+                    if (!token.IsCancellationRequested)
+                    {
+                        ResetSearchButton();
+                        isSearching = false;
+                        SetInteractiveUI(true);
+                        if (videoList.Count == 0)
+                            StatusText.Text = "Видео не найдены.";
+                    }
                 });
             }
             catch (Exception ex)
@@ -312,17 +338,6 @@ namespace YouTubeDownloader
 
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (e.OriginalSource is DependencyObject source)
-            {
-                DependencyObject current = source;
-                while (current != null)
-                {
-                    if (current is GridViewColumnHeader)
-                        return;
-                    current = VisualTreeHelper.GetParent(current);
-                }
-            }
-
             if (ResultsList.SelectedItem is not YouTubeVideo video) return;
 
             string url = $"https://www.youtube.com/watch?v={video.id}";
@@ -338,43 +353,6 @@ namespace YouTubeDownloader
             {
                 StatusText.Text = $"Не удалось открыть браузер: {ex.Message}";
             }
-        }
-
-        private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
-        {
-            if (e.OriginalSource is not GridViewColumnHeader header || header.Column == null)
-                return;
-
-            string? sortBy = header.Column.Header switch
-            {
-                "👁 Просмотры" => nameof(YouTubeVideo.view_count),
-                "📅 Дата" => nameof(YouTubeVideo.upload_date),
-                "🎬 Название" => nameof(YouTubeVideo.title),
-                "📺 Канал" => nameof(YouTubeVideo.uploader),
-                _ => null
-            };
-
-            if (string.IsNullOrEmpty(sortBy))
-                return;
-
-            ListSortDirection direction;
-            if (header != lastHeaderClicked)
-            {
-                direction = ListSortDirection.Descending;
-            }
-            else
-            {
-                direction = lastDirection == ListSortDirection.Ascending
-                    ? ListSortDirection.Descending
-                    : ListSortDirection.Ascending;
-            }
-
-            lastHeaderClicked = header;
-            lastDirection = direction;
-
-            view!.SortDescriptions.Clear();
-            view.SortDescriptions.Add(new SortDescription(sortBy, direction));
-            view.Refresh();
         }
     }
 

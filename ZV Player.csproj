@@ -20,4 +20,12 @@
     </Resource>
   </ItemGroup>
 
+  <!-- <ItemGroup>
+    <Compile Include="Services\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Models\*.cs" />
+  </ItemGroup> -->
+
 </Project>

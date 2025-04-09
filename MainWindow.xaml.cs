@@ -289,6 +289,12 @@ namespace YouTubeDownloader
             StatusText.Text = $"Скачано: {safeTitle}";
         }
 
+        private void DownloadVideoButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Скачивание видео пока не реализовано.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
             if (!Directory.Exists(downloadFolder))

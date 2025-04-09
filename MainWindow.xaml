@@ -1,9 +1,8 @@
 ﻿<Window x:Class="YouTubeDownloader.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ZV Tube v1.1 by DYA" Height="520" Width="720"
-        WindowStartupLocation="CenterScreen"
-        >
+        Title="ZV Tube v1.1 by DYA" Height="520" Width="800"
+        WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,12 +14,27 @@
 
         <TextBlock Text="Что ищем на Ютубчике?" FontWeight="Bold" FontSize="14"/>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,5,0,5">
-            <TextBox x:Name="SearchBox" Width="450" Height="30" Margin="0,0,10,0"
+        <!-- Строка поиска и кнопки в одной строке -->
+        <Grid Grid.Row="1" Margin="0,5,0,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Поисковое поле по левому краю -->
+            <TextBox x:Name="SearchBox" Width="450" Height="30"
+                     VerticalAlignment="Center" Margin="0,0,10,0"
+                     HorizontalAlignment="Left" FontSize="14"
                      KeyDown="SearchBox_KeyDown"/>
-            <Button x:Name="SearchButton" Content="🔎 Поиск" Width="100" Height="30" Cursor="Hand"
-                    Click="SearchButton_Click"/>
-        </StackPanel>
+
+            <!-- Кнопки по правому краю -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="SearchButton" Content="🔎 Поиск" Width="100" Height="30" Margin="0,0,10,0"
+                        Click="SearchButton_Click" Cursor="Hand"/>
+                <Button x:Name="OpenFolderButton" Content="📁 Открыть папку" Width="120" Height="30"
+                        Click="OpenFolderButton_Click"/>
+            </StackPanel>
+        </Grid>
 
         <TextBlock x:Name="StatusText" Text="Результаты будут отображены после осуществления поиска"
                    Grid.Row="2" Foreground="Red" Margin="0,0,0,10" FontSize="12"/>
@@ -36,7 +50,7 @@
                         <GridViewColumn Header="🎬 Название" Width="280" DisplayMemberBinding="{Binding Title}" />
                         <GridViewColumn Header="📺 Канал" Width="180" DisplayMemberBinding="{Binding Uploader}" />
                         <GridViewColumn Header="👁 Просмотры" Width="100" DisplayMemberBinding="{Binding Views}" />
-                        <GridViewColumn Header="📅 Дата" Width="100" DisplayMemberBinding="{Binding UploadDate}" />
+                        <GridViewColumn Header="📅 Дата" Width="180" DisplayMemberBinding="{Binding UploadDate}" />
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -60,8 +74,8 @@
                 <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
                     <Button x:Name="DownloadButton" Content="💾 Скачать аудио" Width="120" Height="32" Margin="0,0,10,0"
                             Click="DownloadButton_Click" Cursor="Hand"/>
-                    <Button x:Name="OpenFolderButton" Content="📁 Открыть папку" Width="120" Height="32"
-                            Click="OpenFolderButton_Click"/>
+                    <Button x:Name="DownloadVideoButton" Content="📹 Скачать видео" Width="120" Height="32"
+                            Click="DownloadVideoButton_Click" Cursor="Hand"/>
                 </StackPanel>
             </Grid>
         </Border>

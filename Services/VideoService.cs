@@ -62,37 +62,48 @@ namespace YouTubeDownloader.Services
 
         private void ExecuteProcess(string fileName, string arguments, TextBlock statusText, string successMessage)
         {
+            var isPlayer = fileName.Contains("mpv", StringComparison.OrdinalIgnoreCase);
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = isPlayer,
+                RedirectStandardOutput = !isPlayer,
+                RedirectStandardError = !isPlayer,
+                CreateNoWindow = !isPlayer
+            };
+
             try
             {
-                var isPlayer = fileName.Contains("mpv", StringComparison.OrdinalIgnoreCase);
-
-                var psi = new ProcessStartInfo
+                Task.Run(() =>
                 {
-                    FileName = fileName,
-                    Arguments = arguments,
-                    UseShellExecute = isPlayer, // mpv должен быть с true!
-                    RedirectStandardOutput = !isPlayer,
-                    RedirectStandardError = !isPlayer,
-                    CreateNoWindow = !isPlayer,
-                };
+                    var process = Process.Start(psi);
 
-                var process = Process.Start(psi);
+                    if (!isPlayer)
+                    {
+                        process?.WaitForExit();
 
-                if (!isPlayer)
-                {
-                    process?.WaitForExit();
-                    statusText.Text = successMessage;
-                }
-                else
-                {
-                    statusText.Text = successMessage; // UI не блокируем
-                }
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            statusText.Text = successMessage;
+                        });
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            statusText.Text = successMessage;
+                        });
+                    }
+                });
             }
             catch (Exception ex)
             {
                 statusText.Text = $"Ошибка: {ex.Message}";
             }
         }
+
         private string GetSafeFileName(string title)
         {
             return string.Join("_", title.Split(Path.GetInvalidFileNameChars()));

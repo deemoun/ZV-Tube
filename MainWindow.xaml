@@ -17,8 +17,8 @@
                 <MenuItem Header="Играть аудио" Click="PlayButtonAudio_Click"/>
                 <MenuItem Header="Играть видео" Click="PlayButtonVideo_Click"/>
             </MenuItem>
-            <MenuItem Header="Настройки"/>
-            <MenuItem Header="Справка"/>
+            <!-- <MenuItem Header="Настройки"/>
+            <MenuItem Header="Справка"/> -->
         </Menu>
 
         <!-- Основной контент -->

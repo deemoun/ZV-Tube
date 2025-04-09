@@ -17,9 +17,11 @@ namespace YouTubeDownloader.Services
         {
             string url = $"https://www.youtube.com/watch?v={video.id}";
             string safeTitle = GetSafeFileName(video.title);
-            string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
+            string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.mp3");
 
-            RunYtDlp($"-f bestaudio -o \"{outputPath}\" \"{url}\"", statusText, $"Скачано: {safeTitle}");
+            RunYtDlp($"--extract-audio --audio-format mp3 -o \"{outputPath}\" \"{url}\"",
+                     statusText,
+                     $"Скачано: {safeTitle}");
         }
 
         public void DownloadVideo(YouTubeVideo video, TextBlock statusText)

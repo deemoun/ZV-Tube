@@ -28,6 +28,7 @@ namespace YouTubeDownloader
         public MainWindow()
         {
             InitializeComponent();
+            SearchBox.Focus();
             Directory.CreateDirectory(downloadFolder);
 
             ResultsList.ItemsSource = videoList;
@@ -82,6 +83,7 @@ namespace YouTubeDownloader
             SetButtonState(PlayVideoButton, hasSelection);
             SetButtonState(PlayAudioButton, hasSelection);
             SetButtonState(DownloadButton, hasSelection);
+            SetButtonState(DownloadVideoButton, hasSelection);
 
             ResultsContainer.IsEnabled = enabled;
             ResultsContainer.Opacity = enabled ? 1.0 : 0.5;

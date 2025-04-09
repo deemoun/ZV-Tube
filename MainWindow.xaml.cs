@@ -154,6 +154,10 @@ namespace YouTubeDownloader
             SearchButton.Content = "🔎 Поиск";
             SearchButton.ClearValue(Button.BackgroundProperty);
             SearchButton.ClearValue(Button.ForegroundProperty);
+
+            // Добавим условие: если список непустой — активировать интерфейс
+            bool hasResults = videoList.Count > 0;
+            SetInteractiveUI(hasResults);
         }
 
         private void SetSearchButtonToStop()

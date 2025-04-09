@@ -150,7 +150,7 @@ namespace YouTubeDownloader.Services
             Application.Current.Dispatcher.Invoke(() =>
             {
                 resetSearchButton();
-                setUI(false);
+                setUI(videoList.Count > 0);
                 statusText.Text = "Поиск остановлен.";
             });
         }

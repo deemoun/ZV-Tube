@@ -25,8 +25,15 @@ namespace YouTubeDownloader.Services
 
         public void StartSearch(string query, TextBlock statusText, Action<bool> setInteractiveUI, Action resetSearchButton)
         {
+            if (IsSearching)
+                return;
+
             IsSearching = true;
             cts = new CancellationTokenSource();
+
+            videoList.Clear();
+            Application.Current.Dispatcher.Invoke(() => statusText.Text = "Поиск...");
+
             Task.Run(() => PerformSearch(query, cts.Token, statusText, setInteractiveUI, resetSearchButton));
         }
 
@@ -45,10 +52,27 @@ namespace YouTubeDownloader.Services
                 };
 
                 searchProcess = Process.Start(psi);
-                if (searchProcess == null)
+
+                // Авто-таймаут через 60 сек
+                Task.Run(async () =>
                 {
-                    throw new Exception("yt-dlp не запустился. Проверьте путь к yt-dlp.exe.");
-                }
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(60), token);
+                        if (!token.IsCancellationRequested)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                StopSearch(statusText, resetSearchButton, setInteractiveUI);
+                                statusText.Text = "Поиск остановлен по таймауту.";
+                            });
+                        }
+                    }
+                    catch { }
+                });
+
+                if (searchProcess == null)
+                    throw new Exception("yt-dlp не запустился.");
 
                 while (!searchProcess.StandardOutput.EndOfStream && !token.IsCancellationRequested)
                 {
@@ -69,18 +93,21 @@ namespace YouTubeDownloader.Services
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    resetSearchButton();
-                    setInteractiveUI(videoList.Count > 0);
-                    statusText.Text = videoList.Count > 0 ? "Поиск завершен." : "Видео не найдены.";
+                    if (!token.IsCancellationRequested)
+                    {
+                        resetSearchButton();
+                        setInteractiveUI(videoList.Count > 0);
+                        statusText.Text = videoList.Count > 0 ? "Поиск завершён." : "Видео не найдены.";
+                    }
                 });
             }
             catch (Exception ex)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    statusText.Text = $"Ошибка: {ex.Message}";
                     resetSearchButton();
                     setInteractiveUI(false);
-                    statusText.Text = $"Ошибка: {ex.Message}";
                 });
             }
             finally
@@ -93,27 +120,38 @@ namespace YouTubeDownloader.Services
 
         public void StopSearch(TextBlock statusText, Action resetSearchButton, Action<bool> setUI)
         {
-            if (!IsSearching) return;
+            if (!IsSearching)
+                return;
 
             IsSearching = false;
+            cts?.Cancel();
 
             try
             {
-                cts?.Cancel();
-
                 if (searchProcess != null && !searchProcess.HasExited)
                 {
-                    searchProcess.Kill(true);
-                    searchProcess.Dispose();
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "taskkill",
+                        Arguments = $"/PID {searchProcess.Id} /T /F",
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    });
                 }
             }
-            catch { /* intentionally ignored */ }
+            catch (Exception ex)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    statusText.Text = $"Ошибка остановки: {ex.Message}";
+                });
+            }
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                statusText.Text = "Поиск остановлен.";
                 resetSearchButton();
                 setUI(false);
+                statusText.Text = "Поиск остановлен.";
             });
         }
     }

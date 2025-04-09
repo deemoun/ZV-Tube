@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Windows.Media;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -55,6 +56,8 @@ namespace YouTubeDownloader
                 StatusText.Text = "Введите запрос.";
                 return;
             }
+
+            SetSearchButtonToStop();
 
             searchService.StartSearch(query, StatusText, SetInteractiveUI, ResetSearchButton);
         }
@@ -153,7 +156,12 @@ namespace YouTubeDownloader
             SearchButton.ClearValue(Button.ForegroundProperty);
         }
 
-        // 🆕 Заглушки для отсутствующих методов:
+        private void SetSearchButtonToStop()
+        {
+            SearchButton.Content = "⛔ Стоп";
+            SearchButton.Background = Brushes.IndianRed;
+            SearchButton.Foreground = Brushes.White;
+        }
 
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
         {

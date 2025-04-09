@@ -85,7 +85,7 @@ namespace YouTubeDownloader.Services
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 videoList.Add(video);
-                                statusText.Text = $"Добавлено: {videoList.Count}";
+                                statusText.Text = $"Найдено: {videoList.Count}";
                             });
                         }
                     }

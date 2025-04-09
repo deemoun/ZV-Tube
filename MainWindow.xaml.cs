@@ -289,11 +289,40 @@ namespace YouTubeDownloader
             StatusText.Text = $"Скачано: {safeTitle}";
         }
 
-        private void DownloadVideoButton_Click(object sender, RoutedEventArgs e)
+        private async void DownloadVideoButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Скачивание видео пока не реализовано.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+            if (ResultsList.SelectedItem is not YouTubeVideo video)
+            {
+                StatusText.Text = "Выберите видео.";
+                return;
+            }
 
+            string url = $"https://www.youtube.com/watch?v={video.id}";
+            string safeTitle = string.Join("_", video.title.Split(Path.GetInvalidFileNameChars()));
+            string outputPath = Path.Combine(downloadFolder, $"{safeTitle}.%(ext)s");
+
+            StatusText.Text = "Скачивание начато...";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = ytDlpPath,
+                Arguments = $"-f bestvideo+bestaudio --merge-output-format mp4 --no-write-thumbnail -o \"{outputPath}\" \"{url}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            var process = Process.Start(psi);
+            if (process == null)
+            {
+                StatusText.Text = "Не удалось запустить загрузку.";
+                return;
+            }
+
+            await process.WaitForExitAsync();
+            StatusText.Text = $"Скачано: {safeTitle}";
+        }
 
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {

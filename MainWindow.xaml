@@ -37,7 +37,7 @@
         </Grid>
 
         <TextBlock x:Name="StatusText" Text="Результаты будут отображены после осуществления поиска"
-                   Grid.Row="2" Foreground="Red" Margin="0,0,0,10" FontSize="12"/>
+                   Grid.Row="2" Foreground="Green" Margin="0,0,0,10" FontSize="12"/>
 
         <!-- Список результатов -->
         <Grid x:Name="ResultsContainer" Grid.Row="3">

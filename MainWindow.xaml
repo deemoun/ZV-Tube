@@ -29,7 +29,6 @@
         <Grid x:Name="ResultsContainer" Grid.Row="3">
             <ListView x:Name="ResultsList"
                       SelectionChanged="ResultsList_SelectionChanged"
-                      MouseDoubleClick="ResultsList_MouseDoubleClick"
                       Margin="0,0,0,10"
                       BorderBrush="#ccc" BorderThickness="1">
                 <ListView.View>

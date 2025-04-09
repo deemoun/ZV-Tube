@@ -17,11 +17,9 @@ namespace YouTubeDownloader.Services
         {
             string url = $"https://www.youtube.com/watch?v={video.id}";
             string safeTitle = GetSafeFileName(video.title);
-            string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.mp3");
+            string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
 
-            RunYtDlp($"--extract-audio --audio-format mp3 -o \"{outputPath}\" \"{url}\"",
-                     statusText,
-                     $"Скачано: {safeTitle}");
+            RunYtDlp($"-f bestaudio --extract-audio --audio-format mp3 -o \"{outputPath}\" \"{url}\"", statusText, $"Скачивание завершено: {video.title}");
         }
 
         public void DownloadVideo(YouTubeVideo video, TextBlock statusText)
@@ -30,7 +28,7 @@ namespace YouTubeDownloader.Services
             string safeTitle = GetSafeFileName(video.title);
             string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
 
-            RunYtDlp($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{outputPath}\" \"{url}\"", statusText, $"Скачано: {safeTitle}");
+            RunYtDlp($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{outputPath}\" \"{url}\"", statusText, $"Скачивание завершено: {video.title}");
         }
 
         public void PlayVideo(YouTubeVideo video, TextBlock statusText)
@@ -118,8 +116,24 @@ namespace YouTubeDownloader.Services
 
                 process.OutputDataReceived += (s, e) =>
                 {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
-                        output.AppendLine(e.Data);
+                    if (string.IsNullOrWhiteSpace(e.Data)) return;
+
+                    output.AppendLine(e.Data);
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (e.Data.Contains("Destination", StringComparison.OrdinalIgnoreCase) ||
+                            e.Data.Contains("Downloading", StringComparison.OrdinalIgnoreCase))
+                        {
+                            statusText.Text = "Скачивание...";
+                        }
+                        else if (e.Data.Contains("Merger", StringComparison.OrdinalIgnoreCase) ||
+                                 e.Data.Contains("Converting", StringComparison.OrdinalIgnoreCase) ||
+                                 e.Data.Contains("ffmpeg", StringComparison.OrdinalIgnoreCase))
+                        {
+                            statusText.Text = "Конвертация...";
+                        }
+                    });
                 };
 
                 process.ErrorDataReceived += (s, e) =>

@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using YouTubeDownloader.Models;
@@ -17,7 +19,7 @@ namespace YouTubeDownloader.Services
             string safeTitle = GetSafeFileName(video.title);
             string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
 
-            ExecuteProcess("yt-dlp.exe", $"-f bestaudio -o \"{outputPath}\" \"{url}\"", statusText, $"Скачано: {safeTitle}");
+            RunYtDlp($"-f bestaudio -o \"{outputPath}\" \"{url}\"", statusText, $"Скачано: {safeTitle}");
         }
 
         public void DownloadVideo(YouTubeVideo video, TextBlock statusText)
@@ -26,17 +28,17 @@ namespace YouTubeDownloader.Services
             string safeTitle = GetSafeFileName(video.title);
             string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
 
-            ExecuteProcess("yt-dlp.exe", $"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{outputPath}\" \"{url}\"", statusText, $"Скачано: {safeTitle}");
+            RunYtDlp($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{outputPath}\" \"{url}\"", statusText, $"Скачано: {safeTitle}");
         }
 
         public void PlayVideo(YouTubeVideo video, TextBlock statusText)
         {
-            ExecuteProcess("mpv.exe", $"\"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
+            RunExternal("mpv.exe", $"\"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
         }
 
         public void PlayAudio(YouTubeVideo video, TextBlock statusText)
         {
-            ExecuteProcess("mpv.exe", $"--no-video \"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
+            RunExternal("mpv.exe", $"--no-video \"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
         }
 
         public void OpenDownloadFolder()
@@ -60,53 +62,104 @@ namespace YouTubeDownloader.Services
             }
         }
 
-        private void ExecuteProcess(string fileName, string arguments, TextBlock statusText, string successMessage)
+        private void RunExternal(string fileName, string arguments, TextBlock statusText, string successMessage)
         {
-            var isPlayer = fileName.Contains("mpv", StringComparison.OrdinalIgnoreCase);
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    UseShellExecute = true
+                });
+
+                statusText.Text = successMessage;
+            }
+            catch (Exception ex)
+            {
+                statusText.Text = $"Ошибка запуска: {ex.Message}";
+            }
+        }
+
+        private async void RunYtDlp(string arguments, TextBlock statusText, string successMessage)
+        {
+            if (!File.Exists("yt-dlp.exe"))
+            {
+                statusText.Text = "Ошибка: yt-dlp.exe не найден.";
+                return;
+            }
+
+            if (!File.Exists("ffmpeg.exe"))
+            {
+                statusText.Text = "Ошибка: ffmpeg.exe не найден.";
+                return;
+            }
+
+            Directory.CreateDirectory(DownloadFolder);
 
             var psi = new ProcessStartInfo
             {
-                FileName = fileName,
+                FileName = "yt-dlp.exe",
                 Arguments = arguments,
-                UseShellExecute = isPlayer,
-                RedirectStandardOutput = !isPlayer,
-                RedirectStandardError = !isPlayer,
-                CreateNoWindow = !isPlayer
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
             };
+
+            var output = new StringBuilder();
+            var error = new StringBuilder();
 
             try
             {
-                Task.Run(() =>
+                var process = new Process { StartInfo = psi };
+
+                process.OutputDataReceived += (s, e) =>
                 {
-                    var process = Process.Start(psi);
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                        output.AppendLine(e.Data);
+                };
 
-                    if (!isPlayer)
+                process.ErrorDataReceived += (s, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                        error.AppendLine(e.Data);
+                };
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                await Task.Run(() => process.WaitForExit());
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (process.ExitCode == 0)
                     {
-                        process?.WaitForExit();
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            statusText.Text = successMessage;
-                        });
+                        statusText.Text = successMessage;
                     }
                     else
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            statusText.Text = successMessage;
-                        });
+                        statusText.Text = $"Ошибка загрузки:\n{error.ToString()}";
                     }
                 });
             }
             catch (Exception ex)
             {
-                statusText.Text = $"Ошибка: {ex.Message}";
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    statusText.Text = $"Исключение: {ex.Message}";
+                });
             }
         }
 
         private string GetSafeFileName(string title)
         {
-            return string.Join("_", title.Split(Path.GetInvalidFileNameChars()));
+            foreach (var c in Path.GetInvalidFileNameChars())
+            {
+                title = title.Replace(c, '_');
+            }
+            return title;
         }
     }
 }

@@ -46,7 +46,9 @@ namespace YouTubeDownloader.Services
 
                 searchProcess = Process.Start(psi);
                 if (searchProcess == null)
-                    throw new Exception("yt-dlp не запустился.");
+                {
+                    throw new Exception("yt-dlp не запустился. Проверьте путь к yt-dlp.exe.");
+                }
 
                 while (!searchProcess.StandardOutput.EndOfStream && !token.IsCancellationRequested)
                 {

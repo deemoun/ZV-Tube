@@ -31,7 +31,7 @@ namespace YouTubeDownloader.Services
 
         public void PlayVideo(YouTubeVideo video, TextBlock statusText)
         {
-            ExecuteProcess("mpv.exe", $"--no-config \"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
+            ExecuteProcess("mpv.exe", $"\"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
         }
 
         public void PlayAudio(YouTubeVideo video, TextBlock statusText)
@@ -64,25 +64,35 @@ namespace YouTubeDownloader.Services
         {
             try
             {
-                var process = Process.Start(new ProcessStartInfo
+                var isPlayer = fileName.Contains("mpv", StringComparison.OrdinalIgnoreCase);
+
+                var psi = new ProcessStartInfo
                 {
                     FileName = fileName,
                     Arguments = arguments,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                });
+                    UseShellExecute = isPlayer, // mpv должен быть с true!
+                    RedirectStandardOutput = !isPlayer,
+                    RedirectStandardError = !isPlayer,
+                    CreateNoWindow = !isPlayer,
+                };
 
-                process?.WaitForExit();
-                statusText.Text = successMessage;
+                var process = Process.Start(psi);
+
+                if (!isPlayer)
+                {
+                    process?.WaitForExit();
+                    statusText.Text = successMessage;
+                }
+                else
+                {
+                    statusText.Text = successMessage; // UI не блокируем
+                }
             }
             catch (Exception ex)
             {
                 statusText.Text = $"Ошибка: {ex.Message}";
             }
         }
-
         private string GetSafeFileName(string title)
         {
             return string.Join("_", title.Split(Path.GetInvalidFileNameChars()));

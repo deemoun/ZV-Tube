@@ -1,25 +1,24 @@
 ﻿<Window x:Class="YouTubeDownloader.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ZV Tube v1.1 by DYA"
+        Title="ZV Tube v1.1.2 by DYA"
         Height="520" Width="800"
         WindowStartupLocation="CenterScreen">
     <DockPanel>
 
         <!-- Главное меню -->
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="Файл">
-                <MenuItem Header="Открыть папку загрузок" Click="OpenFolderButton_Click"/>
+            <MenuItem Header="📁 Файл">
+                <MenuItem Header="📂 Открыть папку загрузок" Click="OpenFolderButton_Click"/>
                 <Separator/>
-                <MenuItem Header="Выход" Click="ExitMenuItem_Click"/>
+                <MenuItem Header="❌ Выход" Click="ExitMenuItem_Click"/>
             </MenuItem>
-            <MenuItem Header="Действия">
-                <MenuItem Header="Играть аудио" Click="PlayButtonAudio_Click"/>
-                <MenuItem Header="Играть видео" Click="PlayButtonVideo_Click"/>
+            <MenuItem Header="⚙️ Действия">
+                <MenuItem Header="🔊 Играть аудио" Click="PlayButtonAudio_Click"/>
+                <MenuItem Header="🎞️ Играть видео" Click="PlayButtonVideo_Click"/>
             </MenuItem>
-            <!-- <MenuItem Header="Настройки"/>
-            <MenuItem Header="Справка"/> -->
         </Menu>
+
 
         <!-- Основной контент -->
         <Grid Margin="10">

@@ -1,25 +1,25 @@
 # ZV Tube
 
-Простое WPF-приложение для поиска, загрузки и воспроизведения видео и аудио с YouTube. Использует `yt-dlp` и `mpv` в качестве внешних инструментов.
+A simple WPF application for searching, downloading, and playing videos and audio from YouTube. It uses `yt-dlp` and `mpv` as external tools.
 
-![Окно приложения](zv-tube.png)
+![Application window](zv-tube.png)
 
-## 🚀 Возможности
+## 🚀 Features
 
-- 🔎 Поиск видео по ключевым словам (до 30 результатов)
-- 📥 Загрузка видео или только аудио (MP3)
-- ▶️ Воспроизведение видео или аудио через `mpv`
-- 📂 Открытие папки загрузок
-- 📊 Табличный список с возможностью сортировки по столбцам
+- 🔎 Search videos by keywords (up to 30 results)
+- 📥 Download video or audio only (MP3)
+- ▶️ Play video or audio via `mpv`
+- 📂 Open the downloads folder
+- 📊 Tabular list with column sorting
 
-## 🛠 Зависимости
+## 🛠 Dependencies
 
-### Внешние утилиты
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — для получения метаданных и загрузки видео
-- [ffmpeg](https://ffmpeg.org/download.html) — необходим для конвертации при загрузке
-- [mpv](https://mpv.io/) — для воспроизведения видео и аудио
+### External tools
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — for fetching metadata and downloading videos
+- [ffmpeg](https://ffmpeg.org/download.html) — required for conversion during downloads
+- [mpv](https://mpv.io/) — for playing video and audio
 
-**Все `.exe` файлы должны находиться в одной папке с исполняемым файлом приложения:**
+**All `.exe` files must be in the same folder as the application's executable file:**
 
 ```
 /ZV Player/
@@ -29,42 +29,42 @@
   └─ ZV Player.exe
 ```
 
-### NuGet-пакеты
-Проект использует стандартные библиотеки WPF. Внешние пакеты не требуются.
+### NuGet packages
+The project uses standard WPF libraries. No external packages are required.
 
-## 📁 Структура проекта
+## 📁 Project structure
 
 ```
 ZV Player/
 ├── Models/
-│   └── YouTubeVideo.cs      # Модель данных YouTube-видео
+│   └── YouTubeVideo.cs      # Data model for a YouTube video
 ├── Services/
-│   ├── SearchService.cs     # Обёртка над yt-dlp для поиска
-│   └── VideoService.cs      # Скачивание, воспроизведение и утилиты
-├── MainWindow.xaml          # XAML-интерфейс главного окна
-├── MainWindow.xaml.cs       # Логика взаимодействия и обработчики событий
+│   ├── SearchService.cs     # Wrapper around yt-dlp for search
+│   └── VideoService.cs      # Downloading, playback, and utilities
+├── MainWindow.xaml          # XAML interface of the main window
+├── MainWindow.xaml.cs       # Interaction logic and event handlers
 └── README.md
 ```
 
-## 🧠 Как работает
+## 🧠 How it works
 
-1. **Поиск** — при вводе запроса запускается `yt-dlp ytsearch30:"..." --print-json`, парсятся результаты, заполняется `ObservableCollection`.
-2. **Загрузка** — `yt-dlp` скачивает видео или аудио, путь указывается в формате `downloads/Название.%(ext)s`.
-3. **Воспроизведение** — `mpv.exe` запускается с нужной ссылкой и флагами.
-4. **Сортировка** — реализована через `CollectionView`, поддерживается кликом по заголовкам столбцов.
+1. **Search** — when a query is entered, `yt-dlp ytsearch30:"..." --print-json` is run, the results are parsed, and an `ObservableCollection` is filled.
+2. **Download** — `yt-dlp` downloads the video or audio, with the path specified as `downloads/Title.%(ext)s`.
+3. **Playback** — `mpv.exe` is launched with the required URL and flags.
+4. **Sorting** — implemented through `CollectionView`, supported by clicking column headers.
 
-## ⚙️ Сборка
+## ⚙️ Build
 
-Открыть проект в **Visual Studio** (Windows), тип проекта — `WPF App (.NET)`.
+Open the project in **Visual Studio** (Windows), project type — `WPF App (.NET)`.
 
-## 📌 Заметки
+## 📌 Notes
 
-- Убедитесь, что `yt-dlp`, `ffmpeg`, и `mpv` доступны рядом с `.exe`. Они обязательны для функционирования приложения.
-- Папка загрузок автоматически создаётся в `./downloads/`.
+- Make sure that `yt-dlp`, `ffmpeg`, and `mpv` are located next to the `.exe`. They are required for the application to function.
+- The downloads folder is created automatically in `./downloads/`.
 
 ---
 
+📌 **Created with ❤️ for local use.**
+⚠️ The program is intended for personal use only.
+The developer is not responsible for using the application in violation of the [YouTube Terms of Service](https://www.youtube.com/t/terms), nor for any consequences related to its operation.
 
-📌 **Создано с ❤️ для локального использования.**  
-⚠️ Программа предназначена исключительно для личного использования.  
-Разработчик не несёт ответственности за использование приложения с нарушением [правил использования YouTube](https://www.youtube.com/t/terms), а также за любые возможные последствия, связанные с его функционированием.

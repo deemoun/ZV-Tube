@@ -1,7 +1,7 @@
 ﻿<Window x:Class="YouTubeDownloader.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ZV Tube v1.1.2 by DYA"
+        Title="ZV Tube v1.1.3 by DYA"
         Height="520" Width="800"
         WindowStartupLocation="CenterScreen">
     <DockPanel>

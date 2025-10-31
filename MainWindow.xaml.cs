@@ -53,7 +53,7 @@ namespace YouTubeDownloader
             string query = SearchBox.Text.Trim();
             if (string.IsNullOrEmpty(query))
             {
-                StatusText.Text = "Введите запрос.";
+                StatusText.Text = "Please enter a query.";
                 return;
             }
 
@@ -103,10 +103,10 @@ namespace YouTubeDownloader
             {
                 string sortBy = header.Column.Header switch
                 {
-                    string h when h.Contains("Название") => nameof(YouTubeVideo.title),
-                    string h when h.Contains("Канал") => nameof(YouTubeVideo.uploader),
-                    string h when h.Contains("Просмотры") => nameof(YouTubeVideo.view_count),
-                    string h when h.Contains("Дата") => nameof(YouTubeVideo.upload_date),
+                    string h when h.Contains("Title") => nameof(YouTubeVideo.title),
+                    string h when h.Contains("Channel") => nameof(YouTubeVideo.uploader),
+                    string h when h.Contains("Views") => nameof(YouTubeVideo.view_count),
+                    string h when h.Contains("Date") => nameof(YouTubeVideo.upload_date),
                     _ => null
                 };
 
@@ -151,18 +151,18 @@ namespace YouTubeDownloader
 
         private void ResetSearchButton()
         {
-            SearchButton.Content = "🔎 Поиск";
+            SearchButton.Content = "🔎 Search";
             SearchButton.ClearValue(Button.BackgroundProperty);
             SearchButton.ClearValue(Button.ForegroundProperty);
 
-            // Добавим условие: если список непустой — активировать интерфейс
+            // Re-enable the interface only when the list has items
             bool hasResults = videoList.Count > 0;
             SetInteractiveUI(hasResults);
         }
 
         private void SetSearchButtonToStop()
         {
-            SearchButton.Content = "⛔ Стоп";
+            SearchButton.Content = "⛔ Stop";
             SearchButton.Background = Brushes.IndianRed;
             SearchButton.Foreground = Brushes.White;
         }

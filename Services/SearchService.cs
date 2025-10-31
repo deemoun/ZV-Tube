@@ -32,7 +32,7 @@ namespace YouTubeDownloader.Services
             cts = new CancellationTokenSource();
 
             videoList.Clear();
-            Application.Current.Dispatcher.Invoke(() => statusText.Text = "Поиск...");
+            Application.Current.Dispatcher.Invoke(() => statusText.Text = "Searching...");
 
             Task.Run(() => PerformSearch(query, cts.Token, statusText, setInteractiveUI, resetSearchButton));
         }
@@ -53,7 +53,7 @@ namespace YouTubeDownloader.Services
 
                 searchProcess = Process.Start(psi);
 
-                // Авто-таймаут через 60 сек
+                // Auto-timeout after 60 seconds
                 Task.Run(async () =>
                 {
                     try
@@ -64,7 +64,7 @@ namespace YouTubeDownloader.Services
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 StopSearch(statusText, resetSearchButton, setInteractiveUI);
-                                statusText.Text = "Поиск остановлен по таймауту.";
+                                statusText.Text = "Search stopped due to timeout.";
                             });
                         }
                     }
@@ -72,7 +72,7 @@ namespace YouTubeDownloader.Services
                 });
 
                 if (searchProcess == null)
-                    throw new Exception("yt-dlp не запустился.");
+                    throw new Exception("yt-dlp failed to start.");
 
                 while (!searchProcess.StandardOutput.EndOfStream && !token.IsCancellationRequested)
                 {
@@ -85,7 +85,7 @@ namespace YouTubeDownloader.Services
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 videoList.Add(video);
-                                statusText.Text = $"Найдено: {videoList.Count}";
+                                statusText.Text = $"Found: {videoList.Count}";
                             });
                         }
                     }
@@ -97,7 +97,7 @@ namespace YouTubeDownloader.Services
                     {
                         resetSearchButton();
                         setInteractiveUI(videoList.Count > 0);
-                        statusText.Text = videoList.Count > 0 ? "Поиск завершён." : "Видео не найдены.";
+                        statusText.Text = videoList.Count > 0 ? "Search completed." : "No videos found.";
                     }
                 });
             }
@@ -105,7 +105,7 @@ namespace YouTubeDownloader.Services
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    statusText.Text = $"Ошибка: {ex.Message}";
+                    statusText.Text = $"Error: {ex.Message}";
                     resetSearchButton();
                     setInteractiveUI(false);
                 });
@@ -143,7 +143,7 @@ namespace YouTubeDownloader.Services
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    statusText.Text = $"Ошибка остановки: {ex.Message}";
+                    statusText.Text = $"Error while stopping: {ex.Message}";
                 });
             }
 
@@ -151,7 +151,7 @@ namespace YouTubeDownloader.Services
             {
                 resetSearchButton();
                 setUI(videoList.Count > 0);
-                statusText.Text = "Поиск остановлен.";
+                statusText.Text = "Search stopped.";
             });
         }
     }

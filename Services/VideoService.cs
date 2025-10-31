@@ -19,7 +19,7 @@ namespace YouTubeDownloader.Services
             string safeTitle = GetSafeFileName(video.title);
             string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
 
-            RunYtDlp($"-f bestaudio --extract-audio --audio-format mp3 -o \"{outputPath}\" \"{url}\"", statusText, $"Скачивание завершено: {video.title}");
+            RunYtDlp($"-f bestaudio --extract-audio --audio-format mp3 -o \"{outputPath}\" \"{url}\"", statusText, $"Download complete: {video.title}");
         }
 
         public void DownloadVideo(YouTubeVideo video, TextBlock statusText)
@@ -28,17 +28,17 @@ namespace YouTubeDownloader.Services
             string safeTitle = GetSafeFileName(video.title);
             string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
 
-            RunYtDlp($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{outputPath}\" \"{url}\"", statusText, $"Скачивание завершено: {video.title}");
+            RunYtDlp($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{outputPath}\" \"{url}\"", statusText, $"Download complete: {video.title}");
         }
 
         public void PlayVideo(YouTubeVideo video, TextBlock statusText)
         {
-            RunExternal("mpv.exe", $"\"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
+            RunExternal("mpv.exe", $"\"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Playing: {video.title}");
         }
 
         public void PlayAudio(YouTubeVideo video, TextBlock statusText)
         {
-            RunExternal("mpv.exe", $"--no-video \"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Воспроизведение: {video.title}");
+            RunExternal("mpv.exe", $"--no-video \"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Playing: {video.title}");
         }
 
         public void OpenDownloadFolder()
@@ -58,7 +58,7 @@ namespace YouTubeDownloader.Services
             }
             catch (Exception ex)
             {
-                statusText.Text = $"Не удалось открыть браузер: {ex.Message}";
+                statusText.Text = $"Failed to open browser: {ex.Message}";
             }
         }
 
@@ -77,7 +77,7 @@ namespace YouTubeDownloader.Services
             }
             catch (Exception ex)
             {
-                statusText.Text = $"Ошибка запуска: {ex.Message}";
+                statusText.Text = $"Failed to start: {ex.Message}";
             }
         }
 
@@ -85,13 +85,13 @@ namespace YouTubeDownloader.Services
         {
             if (!File.Exists("yt-dlp.exe"))
             {
-                statusText.Text = "Ошибка: yt-dlp.exe не найден.";
+                statusText.Text = "Error: yt-dlp.exe not found.";
                 return;
             }
 
             if (!File.Exists("ffmpeg.exe"))
             {
-                statusText.Text = "Ошибка: ffmpeg.exe не найден.";
+                statusText.Text = "Error: ffmpeg.exe not found.";
                 return;
             }
 
@@ -125,13 +125,13 @@ namespace YouTubeDownloader.Services
                         if (e.Data.Contains("Destination", StringComparison.OrdinalIgnoreCase) ||
                             e.Data.Contains("Downloading", StringComparison.OrdinalIgnoreCase))
                         {
-                            statusText.Text = "Скачивание...";
+                            statusText.Text = "Downloading...";
                         }
                         else if (e.Data.Contains("Merger", StringComparison.OrdinalIgnoreCase) ||
                                  e.Data.Contains("Converting", StringComparison.OrdinalIgnoreCase) ||
                                  e.Data.Contains("ffmpeg", StringComparison.OrdinalIgnoreCase))
                         {
-                            statusText.Text = "Конвертация...";
+                            statusText.Text = "Converting...";
                         }
                     });
                 };
@@ -156,7 +156,7 @@ namespace YouTubeDownloader.Services
                     }
                     else
                     {
-                        statusText.Text = $"Ошибка загрузки:\n{error.ToString()}";
+                        statusText.Text = $"Download error:\n{error.ToString()}";
                     }
                 });
             }
@@ -164,7 +164,7 @@ namespace YouTubeDownloader.Services
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    statusText.Text = $"Исключение: {ex.Message}";
+                    statusText.Text = $"Exception: {ex.Message}";
                 });
             }
         }

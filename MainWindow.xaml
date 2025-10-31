@@ -6,21 +6,21 @@
         WindowStartupLocation="CenterScreen">
     <DockPanel>
 
-        <!-- Главное меню -->
+        <!-- Main menu -->
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="📁 Файл">
-                <MenuItem Header="📂 Открыть папку загрузок" Click="OpenFolderButton_Click"/>
+            <MenuItem Header="📁 File">
+                <MenuItem Header="📂 Open download folder" Click="OpenFolderButton_Click"/>
                 <Separator/>
-                <MenuItem Header="❌ Выход" Click="ExitMenuItem_Click"/>
+                <MenuItem Header="❌ Exit" Click="ExitMenuItem_Click"/>
             </MenuItem>
-            <MenuItem Header="⚙️ Действия">
-                <MenuItem Header="🔊 Играть аудио" Click="PlayButtonAudio_Click"/>
-                <MenuItem Header="🎞️ Играть видео" Click="PlayButtonVideo_Click"/>
+            <MenuItem Header="⚙️ Actions">
+                <MenuItem Header="🔊 Play audio" Click="PlayButtonAudio_Click"/>
+                <MenuItem Header="🎞️ Play video" Click="PlayButtonVideo_Click"/>
             </MenuItem>
         </Menu>
 
 
-        <!-- Основной контент -->
+        <!-- Main content -->
         <Grid Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -30,7 +30,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Что ищем на Ютубчике?" FontWeight="Bold" FontSize="14"/>
+            <TextBlock Text="What are we searching on YouTube?" FontWeight="Bold" FontSize="14"/>
 
             <Grid Grid.Row="1" Margin="0,5,0,5">
                 <Grid.ColumnDefinitions>
@@ -44,15 +44,15 @@
                          KeyDown="SearchBox_KeyDown"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="SearchButton" Content="🔎 Поиск" Width="100" Height="30" Margin="0,0,10,0"
+                    <Button x:Name="SearchButton" Content="🔎 Search" Width="100" Height="30" Margin="0,0,10,0"
                             Click="SearchButton_Click" Cursor="Hand"/>
-                    <Button x:Name="OpenFolderButton" Content="📁 Открыть папку" Width="120" Height="30"
+                    <Button x:Name="OpenFolderButton" Content="📁 Open folder" Width="120" Height="30"
                             Click="OpenFolderButton_Click"/>
                 </StackPanel>
             </Grid>
 
             <TextBlock x:Name="StatusText" Grid.Row="2"
-                       Text="Результаты будут отображены после осуществления поиска"
+                       Text="Results will appear after you search"
                        Foreground="Green" Margin="0,0,0,10" FontSize="12"/>
 
             <Grid x:Name="ResultsContainer" Grid.Row="3">
@@ -62,10 +62,10 @@
                           BorderBrush="#ccc" BorderThickness="1">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="🎬 Название" Width="280" DisplayMemberBinding="{Binding Title}" />
-                            <GridViewColumn Header="📺 Канал" Width="180" DisplayMemberBinding="{Binding Uploader}" />
-                            <GridViewColumn Header="👁 Просмотры" Width="100" DisplayMemberBinding="{Binding Views}" />
-                            <GridViewColumn Header="📅 Дата" Width="180" DisplayMemberBinding="{Binding UploadDate}" />
+                            <GridViewColumn Header="🎬 Title" Width="280" DisplayMemberBinding="{Binding Title}" />
+                            <GridViewColumn Header="📺 Channel" Width="180" DisplayMemberBinding="{Binding Uploader}" />
+                            <GridViewColumn Header="👁 Views" Width="100" DisplayMemberBinding="{Binding Views}" />
+                            <GridViewColumn Header="📅 Date" Width="180" DisplayMemberBinding="{Binding UploadDate}" />
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -79,16 +79,16 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <Button x:Name="PlayVideoButton" Content="🎬 Играть видео" Width="120" Height="32" Margin="0,0,10,0"
+                        <Button x:Name="PlayVideoButton" Content="🎬 Play video" Width="120" Height="32" Margin="0,0,10,0"
                                 Click="PlayButtonVideo_Click" Cursor="Hand"/>
-                        <Button x:Name="PlayAudioButton" Content="🎧 Играть аудио" Width="120" Height="32"
+                        <Button x:Name="PlayAudioButton" Content="🎧 Play audio" Width="120" Height="32"
                                 Click="PlayButtonAudio_Click" Cursor="Hand"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
-                        <Button x:Name="DownloadButton" Content="💾 Скачать аудио" Width="120" Height="32" Margin="0,0,10,0"
+                        <Button x:Name="DownloadButton" Content="💾 Download audio" Width="120" Height="32" Margin="0,0,10,0"
                                 Click="DownloadButton_Click" Cursor="Hand"/>
-                        <Button x:Name="DownloadVideoButton" Content="📹 Скачать видео" Width="120" Height="32"
+                        <Button x:Name="DownloadVideoButton" Content="📹 Download video" Width="120" Height="32"
                                 Click="DownloadVideoButton_Click" Cursor="Hand"/>
                     </StackPanel>
                 </Grid>

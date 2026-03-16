@@ -1,181 +1,146 @@
-using System;
 using System.Diagnostics;
-using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using YouTubeDownloader.Models;
+using System.Text.Json;
+using ZVTube.Models;
 
-namespace YouTubeDownloader.Services
+namespace ZVTube.Services;
+
+public class VideoService
 {
-    public class VideoService
+    private readonly ToolManager toolManager;
+    private readonly SettingsService settingsService;
+
+    public VideoService(ToolManager toolManager, SettingsService settingsService)
     {
-        public string DownloadFolder { get; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "downloads");
+        this.toolManager = toolManager;
+        this.settingsService = settingsService;
+    }
 
-        public void DownloadAudio(YouTubeVideo video, TextBlock statusText)
+    public async Task<List<YouTubeVideo>> SearchAsync(string query, CancellationToken cancellationToken)
+    {
+        var ytDlpPath = await toolManager.EnsureYtDlpAsync();
+        var results = new List<YouTubeVideo>();
+
+        var psi = new ProcessStartInfo
         {
-            string url = $"https://www.youtube.com/watch?v={video.id}";
-            string safeTitle = GetSafeFileName(video.title);
-            string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
+            FileName = ytDlpPath,
+            Arguments = $"ytsearch30:\"{query}\" --print-json --skip-download",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
 
-            RunYtDlp($"-f bestaudio --extract-audio --audio-format mp3 -o \"{outputPath}\" \"{url}\"", statusText, $"Download complete: {video.title}");
-        }
+        using var process = Process.Start(psi) ?? throw new InvalidOperationException("Unable to start yt-dlp.");
 
-        public void DownloadVideo(YouTubeVideo video, TextBlock statusText)
+        while (!process.StandardOutput.EndOfStream && !cancellationToken.IsCancellationRequested)
         {
-            string url = $"https://www.youtube.com/watch?v={video.id}";
-            string safeTitle = GetSafeFileName(video.title);
-            string outputPath = Path.Combine(DownloadFolder, $"{safeTitle}.%(ext)s");
-
-            RunYtDlp($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{outputPath}\" \"{url}\"", statusText, $"Download complete: {video.title}");
-        }
-
-        public void PlayVideo(YouTubeVideo video, TextBlock statusText)
-        {
-            RunExternal("mpv.exe", $"\"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Playing: {video.title}");
-        }
-
-        public void PlayAudio(YouTubeVideo video, TextBlock statusText)
-        {
-            RunExternal("mpv.exe", $"--no-video \"https://www.youtube.com/watch?v={video.id}\"", statusText, $"Playing: {video.title}");
-        }
-
-        public void OpenDownloadFolder()
-        {
-            Process.Start("explorer.exe", DownloadFolder);
-        }
-
-        public void OpenInBrowser(YouTubeVideo video, TextBlock statusText)
-        {
-            try
+            var line = await process.StandardOutput.ReadLineAsync(cancellationToken);
+            if (line?.TrimStart().StartsWith("{") != true)
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = $"https://www.youtube.com/watch?v={video.id}",
-                    UseShellExecute = true
-                });
+                continue;
             }
-            catch (Exception ex)
+
+            var video = JsonSerializer.Deserialize<YouTubeVideo>(line);
+            if (video is not null)
             {
-                statusText.Text = $"Failed to open browser: {ex.Message}";
+                results.Add(video);
             }
         }
 
-        private void RunExternal(string fileName, string arguments, TextBlock statusText, string successMessage)
+        if (!process.HasExited)
         {
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = fileName,
-                    Arguments = arguments,
-                    UseShellExecute = true
-                });
-
-                statusText.Text = successMessage;
-            }
-            catch (Exception ex)
-            {
-                statusText.Text = $"Failed to start: {ex.Message}";
-            }
+            process.Kill(true);
         }
 
-        private async void RunYtDlp(string arguments, TextBlock statusText, string successMessage)
+        return results;
+    }
+
+    public async Task<string> DownloadAudioAsync(YouTubeVideo video)
+    {
+        var output = await RunYtDlpAsync($"-f bestaudio --extract-audio --audio-format mp3 -o \"{GetOutputPattern(video)}\" \"{video.Url}\"");
+        return output ? $"Download complete: {video.title}" : "Audio download failed.";
+    }
+
+    public async Task<string> DownloadVideoAsync(YouTubeVideo video)
+    {
+        var output = await RunYtDlpAsync($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{GetOutputPattern(video)}\" \"{video.Url}\"");
+        return output ? $"Download complete: {video.title}" : "Video download failed.";
+    }
+
+    public string DownloadFolder => settingsService.Load().DownloadFolder;
+
+    public void OpenDownloadFolder() => OpenWithShell(DownloadFolder);
+
+    public void OpenInBrowser(YouTubeVideo video) => OpenWithShell(video.Url);
+
+    public void PlayVideo(YouTubeVideo video)
+    {
+        if (!TryStartProcess("mpv", $"\"{video.Url}\"") && !TryStartProcess("mpv.exe", $"\"{video.Url}\""))
         {
-            if (!File.Exists("yt-dlp.exe"))
-            {
-                statusText.Text = "Error: yt-dlp.exe not found.";
-                return;
-            }
+            OpenWithShell(video.Url);
+        }
+    }
 
-            if (!File.Exists("ffmpeg.exe"))
-            {
-                statusText.Text = "Error: ffmpeg.exe not found.";
-                return;
-            }
+    public void PlayAudio(YouTubeVideo video)
+    {
+        if (!TryStartProcess("mpv", $"--no-video \"{video.Url}\"") && !TryStartProcess("mpv.exe", $"--no-video \"{video.Url}\""))
+        {
+            OpenWithShell(video.Url);
+        }
+    }
 
-            Directory.CreateDirectory(DownloadFolder);
+    private async Task<bool> RunYtDlpAsync(string args)
+    {
+        Directory.CreateDirectory(DownloadFolder);
+        var ytDlpPath = await toolManager.EnsureYtDlpAsync();
 
-            var psi = new ProcessStartInfo
-            {
-                FileName = "yt-dlp.exe",
-                Arguments = arguments,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
+        var psi = new ProcessStartInfo
+        {
+            FileName = ytDlpPath,
+            Arguments = args,
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            CreateNoWindow = true
+        };
 
-            var output = new StringBuilder();
-            var error = new StringBuilder();
-
-            try
-            {
-                var process = new Process { StartInfo = psi };
-
-                process.OutputDataReceived += (s, e) =>
-                {
-                    if (string.IsNullOrWhiteSpace(e.Data)) return;
-
-                    output.AppendLine(e.Data);
-
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (e.Data.Contains("Destination", StringComparison.OrdinalIgnoreCase) ||
-                            e.Data.Contains("Downloading", StringComparison.OrdinalIgnoreCase))
-                        {
-                            statusText.Text = "Downloading...";
-                        }
-                        else if (e.Data.Contains("Merger", StringComparison.OrdinalIgnoreCase) ||
-                                 e.Data.Contains("Converting", StringComparison.OrdinalIgnoreCase) ||
-                                 e.Data.Contains("ffmpeg", StringComparison.OrdinalIgnoreCase))
-                        {
-                            statusText.Text = "Converting...";
-                        }
-                    });
-                };
-
-                process.ErrorDataReceived += (s, e) =>
-                {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
-                        error.AppendLine(e.Data);
-                };
-
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-
-                await Task.Run(() => process.WaitForExit());
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (process.ExitCode == 0)
-                    {
-                        statusText.Text = successMessage;
-                    }
-                    else
-                    {
-                        statusText.Text = $"Download error:\n{error.ToString()}";
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    statusText.Text = $"Exception: {ex.Message}";
-                });
-            }
+        using var process = Process.Start(psi);
+        if (process is null)
+        {
+            return false;
         }
 
-        private string GetSafeFileName(string title)
+        await process.WaitForExitAsync();
+        return process.ExitCode == 0;
+    }
+
+    private static bool TryStartProcess(string fileName, string arguments)
+    {
+        try
         {
-            foreach (var c in Path.GetInvalidFileNameChars())
-            {
-                title = title.Replace(c, '_');
-            }
-            return title;
+            Process.Start(new ProcessStartInfo(fileName, arguments) { UseShellExecute = true });
+            return true;
         }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void OpenWithShell(string target)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = target,
+            UseShellExecute = true
+        });
+    }
+
+    private string GetOutputPattern(YouTubeVideo video)
+    {
+        var safe = string.Concat(video.title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        return Path.Combine(DownloadFolder, $"{safe}.%(ext)s");
     }
 }

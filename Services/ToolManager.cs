@@ -100,7 +100,7 @@ public sealed class ToolManager
             Directory.Delete(extractDir, true);
         }
 
-        ZipFile.ExtractToDirectory(archivePath, extractDir);
+        ExtractArchiveToDirectory(archivePath, extractDir);
 
         var extractedBinary = Directory
             .EnumerateFiles(extractDir, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg", SearchOption.AllDirectories)
@@ -187,7 +187,7 @@ public sealed class ToolManager
                 continue;
             }
 
-            if (!name.Contains(platformToken, StringComparison.OrdinalIgnoreCase) || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            if (!name.Contains(platformToken, StringComparison.OrdinalIgnoreCase) || !IsSupportedArchive(name))
             {
                 continue;
             }
@@ -223,6 +223,36 @@ public sealed class ToolManager
         });
 
         chmod?.WaitForExit();
+    }
+
+    private static bool IsSupportedArchive(string fileName)
+        => fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+            || fileName.EndsWith(".tar.xz", StringComparison.OrdinalIgnoreCase)
+            || fileName.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase)
+            || fileName.EndsWith(".tgz", StringComparison.OrdinalIgnoreCase);
+
+    private static void ExtractArchiveToDirectory(string archivePath, string destinationDirectory)
+    {
+        if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            ZipFile.ExtractToDirectory(archivePath, destinationDirectory);
+            return;
+        }
+
+        using var tar = Process.Start(new ProcessStartInfo
+        {
+            FileName = "tar",
+            ArgumentList = { "-xf", archivePath, "-C", destinationDirectory },
+            UseShellExecute = false,
+            CreateNoWindow = true
+        });
+
+        tar?.WaitForExit();
+
+        if (tar is null || tar.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Unable to extract FFmpeg archive '{Path.GetFileName(archivePath)}'.");
+        }
     }
 
     private static string? ResolveOptionalBinary(string directory, string fileName)

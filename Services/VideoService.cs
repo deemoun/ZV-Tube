@@ -19,7 +19,6 @@ public class VideoService
     {
         var ytDlpPath = await toolManager.EnsureYtDlpAsync();
         var results = new List<YouTubeVideo>();
-        var stderrLines = new List<string>();
 
         var psi = new ProcessStartInfo
         {
@@ -35,13 +34,18 @@ public class VideoService
         psi.ArgumentList.Add($"ytsearch20:{query}");
 
         using var process = Process.Start(psi) ?? throw new InvalidOperationException("Unable to start yt-dlp.");
-        var stderrDrainTask = DrainStderrAsync(process, stderrLines);
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
         try
         {
-            while (!process.StandardOutput.EndOfStream)
+            await process.WaitForExitAsync(cancellationToken);
+
+            var stdout = await stdoutTask;
+            var stderr = await stderrTask;
+
+            foreach (var line in stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                var line = await process.StandardOutput.ReadLineAsync(cancellationToken);
                 if (line?.TrimStart().StartsWith("{") != true)
                 {
                     continue;
@@ -54,10 +58,14 @@ public class VideoService
                 }
             }
 
-            await process.WaitForExitAsync(cancellationToken);
-
             if (process.ExitCode != 0)
             {
+                var stderrLines = stderr
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line => line.Trim())
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .ToList();
+
                 var details = stderrLines.Count > 0 ? string.Join(Environment.NewLine, stderrLines.TakeLast(6)) : "Unknown yt-dlp error.";
                 throw new InvalidOperationException($"yt-dlp search failed (exit code {process.ExitCode}). {details}");
             }
@@ -71,8 +79,6 @@ public class VideoService
                 process.Kill(true);
                 await process.WaitForExitAsync();
             }
-
-            await stderrDrainTask;
         }
     }
 
@@ -176,20 +182,6 @@ public class VideoService
         catch
         {
             return false;
-        }
-    }
-
-    private static async Task DrainStderrAsync(Process process, List<string> stderrLines)
-    {
-        while (!process.StandardError.EndOfStream)
-        {
-            var line = await process.StandardError.ReadLineAsync();
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
-
-            stderrLines.Add(line.Trim());
         }
     }
 

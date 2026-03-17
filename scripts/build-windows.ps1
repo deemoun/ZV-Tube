@@ -5,8 +5,14 @@ $outDir = Join-Path $root 'artifacts/windows-x64'
 
 Push-Location $root
 
-dotnet publish "ZV Player.csproj" -c Release -r win-x64 --self-contained true -o $outDir
+dotnet publish "ZV Player.csproj" \
+  -c Release \
+  -r win-x64 \
+  --self-contained true \
+  -p:PublishSingleFile=true \
+  -p:IncludeNativeLibrariesForSelfExtract=true \
+  -o $outDir
 
-Write-Host "Windows binaries published to $outDir"
+Write-Host "Windows single-file binary published to $outDir"
 
 Pop-Location

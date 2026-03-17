@@ -115,13 +115,7 @@ public class VideoService
 
     public async Task<string> DownloadVideoAsync(YouTubeVideo video)
     {
-        var result = await RunYtDlpAsync(video, args =>
-        {
-            args.Add("-f");
-            args.Add("bestvideo*+bestaudio/best");
-            args.Add("--merge-output-format");
-            args.Add("mp4");
-        });
+        var result = await RunYtDlpAsync(video, _ => { }, requireFfmpeg: true);
 
         return BuildDownloadStatus(result, "Video");
     }
@@ -209,7 +203,7 @@ public class VideoService
         }
     }
 
-    private async Task<DownloadResult> RunYtDlpAsync(YouTubeVideo video, Action<List<string>> modeArgsBuilder)
+    private async Task<DownloadResult> RunYtDlpAsync(YouTubeVideo video, Action<List<string>> modeArgsBuilder, bool requireFfmpeg = false)
     {
         Directory.CreateDirectory(DownloadFolder);
         var tools = await toolManager.EnsureToolsAsync();
@@ -230,8 +224,23 @@ public class VideoService
             psi.ArgumentList.Add(arg);
         }
 
-        psi.ArgumentList.Add("--ffmpeg-location");
-        psi.ArgumentList.Add(tools.FfmpegDirectory);
+        if (requireFfmpeg)
+        {
+            psi.ArgumentList.Add("-f");
+            psi.ArgumentList.Add(!string.IsNullOrWhiteSpace(tools.FfmpegDirectory) ? "bestvideo*+bestaudio/best" : "best[ext=mp4]/best");
+        }
+
+        if (!string.IsNullOrWhiteSpace(tools.FfmpegDirectory))
+        {
+            psi.ArgumentList.Add("--ffmpeg-location");
+            psi.ArgumentList.Add(tools.FfmpegDirectory);
+
+            if (requireFfmpeg)
+            {
+                psi.ArgumentList.Add("--merge-output-format");
+                psi.ArgumentList.Add("mp4");
+            }
+        }
         psi.ArgumentList.Add("--no-playlist");
         psi.ArgumentList.Add("--print");
         psi.ArgumentList.Add("after_move:filepath");

@@ -7,7 +7,15 @@ APPDIR="$ROOT_DIR/artifacts/AppDir"
 
 pushd "$ROOT_DIR" >/dev/null
 
-dotnet publish "ZV Player.csproj" -c Release -r linux-x64 --self-contained true -o "$PUBLISH_DIR"
+dotnet publish "ZV Player.csproj" \
+  -c Release \
+  -r linux-x64 \
+  --self-contained true \
+  -p:PublishSingleFile=true \
+  -p:IncludeNativeLibrariesForSelfExtract=true \
+  -o "$PUBLISH_DIR"
+
+echo "Linux single-file binary published to $PUBLISH_DIR"
 
 mkdir -p "$APPDIR/usr/bin"
 cp -r "$PUBLISH_DIR"/* "$APPDIR/usr/bin/"

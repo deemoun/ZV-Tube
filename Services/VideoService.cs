@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json;
 using ZVTube.Models;
 
@@ -19,12 +17,12 @@ public class VideoService
 
     public async Task<List<YouTubeVideo>> SearchAsync(string query, CancellationToken cancellationToken)
     {
-        var ytDlpPath = await toolManager.EnsureYtDlpAsync();
+        var tools = await toolManager.EnsureToolsAsync();
         var results = new List<YouTubeVideo>();
 
         var psi = new ProcessStartInfo
         {
-            FileName = ytDlpPath,
+            FileName = tools.YtDlpPath,
             Arguments = $"ytsearch30:\"{query}\" --print-json --skip-download",
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -69,13 +67,13 @@ public class VideoService
 
     public async Task<string> DownloadAudioAsync(YouTubeVideo video)
     {
-        var output = await RunYtDlpAsync($"-f bestaudio --extract-audio --audio-format mp3 -o \"{GetOutputPattern(video)}\" \"{video.Url}\"");
+        var output = await RunYtDlpAsync(video, "-f bestaudio --extract-audio --audio-format mp3");
         return output ? $"Download complete: {video.title}" : "Audio download failed.";
     }
 
     public async Task<string> DownloadVideoAsync(YouTubeVideo video)
     {
-        var output = await RunYtDlpAsync($"-f bestvideo+bestaudio --merge-output-format mp4 -o \"{GetOutputPattern(video)}\" \"{video.Url}\"");
+        var output = await RunYtDlpAsync(video, "-f bestvideo+bestaudio --merge-output-format mp4");
         return output ? $"Download complete: {video.title}" : "Video download failed.";
     }
 
@@ -101,15 +99,15 @@ public class VideoService
         }
     }
 
-    private async Task<bool> RunYtDlpAsync(string args)
+    private async Task<bool> RunYtDlpAsync(YouTubeVideo video, string modeArgs)
     {
         Directory.CreateDirectory(DownloadFolder);
-        var ytDlpPath = await toolManager.EnsureYtDlpAsync();
+        var tools = await toolManager.EnsureToolsAsync();
 
         var psi = new ProcessStartInfo
         {
-            FileName = ytDlpPath,
-            Arguments = args,
+            FileName = tools.YtDlpPath,
+            Arguments = $"{modeArgs} --ffmpeg-location \"{tools.FfmpegDirectory}\" -o \"{GetOutputPattern(video)}\" \"{video.Url}\"",
             UseShellExecute = false,
             RedirectStandardError = true,
             RedirectStandardOutput = true,

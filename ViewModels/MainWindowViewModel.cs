@@ -106,6 +106,8 @@ public class MainWindowViewModel : ObservableObject
         {
             searchCts?.Cancel();
             IsSearching = false;
+            searchCts?.Dispose();
+            searchCts = null;
             Status = "Search stopped.";
             return;
         }
@@ -120,7 +122,8 @@ public class MainWindowViewModel : ObservableObject
         Status = "Searching...";
         Videos.Clear();
 
-        searchCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        searchCts?.Dispose();
+        searchCts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
 
         try
         {
@@ -134,7 +137,7 @@ public class MainWindowViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            Status = "Search stopped due to timeout/cancel.";
+            Status = "Search stopped due to timeout/cancel. If this is the first run, tool download may still be in progress; try again in a few seconds.";
         }
         catch (Exception ex)
         {
@@ -143,6 +146,8 @@ public class MainWindowViewModel : ObservableObject
         finally
         {
             IsSearching = false;
+            searchCts?.Dispose();
+            searchCts = null;
         }
     }
 

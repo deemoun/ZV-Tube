@@ -32,8 +32,6 @@ public class VideoService
         };
         psi.ArgumentList.Add("--print-json");
         psi.ArgumentList.Add("--skip-download");
-        // Some search entries can be region blocked/private/deleted.
-        // Ignore those per-entry failures so yt-dlp can keep returning valid results.
         psi.ArgumentList.Add("--ignore-errors");
         psi.ArgumentList.Add("--no-warnings");
         psi.ArgumentList.Add($"ytsearch20:{query}");
@@ -101,14 +99,31 @@ public class VideoService
 
     public async Task<string> DownloadAudioAsync(YouTubeVideo video)
     {
-        var output = await RunYtDlpAsync(video, "-f bestaudio --extract-audio --audio-format mp3");
-        return output ? $"Download complete: {video.title}" : "Audio download failed.";
+        var result = await RunYtDlpAsync(video, args =>
+        {
+            args.Add("-f");
+            args.Add("bestaudio/best");
+            args.Add("-x");
+            args.Add("--audio-format");
+            args.Add("mp3");
+            args.Add("--audio-quality");
+            args.Add("0");
+        });
+
+        return BuildDownloadStatus(result, "Audio");
     }
 
     public async Task<string> DownloadVideoAsync(YouTubeVideo video)
     {
-        var output = await RunYtDlpAsync(video, "-f bestvideo+bestaudio --merge-output-format mp4");
-        return output ? $"Download complete: {video.title}" : "Video download failed.";
+        var result = await RunYtDlpAsync(video, args =>
+        {
+            args.Add("-f");
+            args.Add("bestvideo*+bestaudio/best");
+            args.Add("--merge-output-format");
+            args.Add("mp4");
+        });
+
+        return BuildDownloadStatus(result, "Video");
     }
 
     public string DownloadFolder => settingsService.Load().DownloadFolder;
@@ -121,23 +136,29 @@ public class VideoService
 
     public bool OpenInBrowser(YouTubeVideo video) => TryOpenWithShell(video.Url);
 
-    public void PlayVideo(YouTubeVideo video)
+    public async Task<bool> PlayVideoAsync(YouTubeVideo video)
     {
-        if (!TryStartProcess("mpv", $"\"{video.Url}\"") && !TryStartProcess("mpv.exe", $"\"{video.Url}\""))
+        var tools = await toolManager.EnsureToolsAsync();
+        if (!string.IsNullOrWhiteSpace(tools.FfplayPath))
         {
-            TryOpenWithShell(video.Url);
+            return TryStartProcess(tools.FfplayPath, ["-autoexit", "-window_title", "ZV-Tube", video.Url], useShellExecute: false);
         }
+
+        return TryOpenWithShell(video.Url);
     }
 
-    public void PlayAudio(YouTubeVideo video)
+    public async Task<bool> PlayAudioAsync(YouTubeVideo video)
     {
-        if (!TryStartProcess("mpv", $"--no-video \"{video.Url}\"") && !TryStartProcess("mpv.exe", $"--no-video \"{video.Url}\""))
+        var tools = await toolManager.EnsureToolsAsync();
+        if (!string.IsNullOrWhiteSpace(tools.FfplayPath))
         {
-            TryOpenWithShell(video.Url);
+            return TryStartProcess(tools.FfplayPath, ["-nodisp", "-autoexit", "-window_title", "ZV-Tube", video.Url], useShellExecute: false);
         }
+
+        return TryOpenWithShell(video.Url);
     }
 
-    private async Task<bool> RunYtDlpAsync(YouTubeVideo video, string modeArgs)
+    private async Task<DownloadResult> RunYtDlpAsync(YouTubeVideo video, Action<List<string>> modeArgsBuilder)
     {
         Directory.CreateDirectory(DownloadFolder);
         var tools = await toolManager.EnsureToolsAsync();
@@ -151,13 +172,18 @@ public class VideoService
             CreateNoWindow = true
         };
 
-        foreach (var arg in modeArgs.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        var modeArgs = new List<string>();
+        modeArgsBuilder(modeArgs);
+        foreach (var arg in modeArgs)
         {
             psi.ArgumentList.Add(arg);
         }
 
         psi.ArgumentList.Add("--ffmpeg-location");
         psi.ArgumentList.Add(tools.FfmpegDirectory);
+        psi.ArgumentList.Add("--no-playlist");
+        psi.ArgumentList.Add("--print");
+        psi.ArgumentList.Add("after_move:filepath");
         psi.ArgumentList.Add("-o");
         psi.ArgumentList.Add(GetOutputPattern(video));
         psi.ArgumentList.Add(video.Url);
@@ -165,18 +191,47 @@ public class VideoService
         using var process = Process.Start(psi);
         if (process is null)
         {
-            return false;
+            return new DownloadResult(false, null, "Unable to start yt-dlp process.");
         }
 
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
-        return process.ExitCode == 0;
+
+        var finalPath = stdout
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .LastOrDefault();
+
+        var success = process.ExitCode == 0 && !string.IsNullOrWhiteSpace(finalPath) && File.Exists(finalPath);
+
+        var error = success
+            ? null
+            : string.IsNullOrWhiteSpace(stderr)
+                ? $"yt-dlp failed with exit code {process.ExitCode}."
+                : stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries).LastOrDefault()?.Trim();
+
+        return new DownloadResult(success, finalPath, error);
     }
 
-    private static bool TryStartProcess(string fileName, string arguments)
+    private static bool TryStartProcess(string fileName, IEnumerable<string> arguments, bool useShellExecute)
     {
         try
         {
-            Process.Start(new ProcessStartInfo(fileName, arguments) { UseShellExecute = true });
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                UseShellExecute = useShellExecute,
+                CreateNoWindow = !useShellExecute
+            };
+
+            foreach (var argument in arguments)
+            {
+                psi.ArgumentList.Add(argument);
+            }
+
+            Process.Start(psi);
             return true;
         }
         catch
@@ -207,4 +262,13 @@ public class VideoService
         var safe = string.Concat(video.title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
         return Path.Combine(DownloadFolder, $"{safe}.%(ext)s");
     }
+
+    private static string BuildDownloadStatus(DownloadResult result, string label)
+    {
+        return result.Success
+            ? $"{label} download complete: {result.OutputPath}"
+            : $"{label} download failed: {result.ErrorMessage ?? "Unknown error."}";
+    }
+
+    private sealed record DownloadResult(bool Success, string? OutputPath, string? ErrorMessage);
 }

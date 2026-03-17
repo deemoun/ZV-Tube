@@ -40,7 +40,9 @@ public sealed class ToolManager
             var ytDlpPath = await DownloadYtDlpIfNeededAsync(toolsRoot);
             var ffmpegDirectory = await DownloadFfmpegIfNeededAsync(toolsRoot);
 
-            return new ToolPaths(ytDlpPath, ffmpegDirectory);
+            var ffplayPath = ResolveOptionalBinary(ffmpegDirectory, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffplay.exe" : "ffplay");
+
+            return new ToolPaths(ytDlpPath, ffmpegDirectory, ffplayPath);
         }
         finally
         {
@@ -129,6 +131,18 @@ public sealed class ToolManager
             EnsureExecutablePermission(ffprobeTarget);
         }
 
+        var ffplayName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffplay.exe" : "ffplay";
+        var extractedPlay = Directory
+            .EnumerateFiles(extractDir, ffplayName, SearchOption.AllDirectories)
+            .FirstOrDefault(f => string.Equals(Path.GetFileName(Path.GetDirectoryName(f)), "bin", StringComparison.OrdinalIgnoreCase));
+
+        if (extractedPlay is not null)
+        {
+            var ffplayTarget = Path.Combine(ffmpegDir, ffplayName);
+            File.Copy(extractedPlay, ffplayTarget, overwrite: true);
+            EnsureExecutablePermission(ffplayTarget);
+        }
+
         File.Delete(archivePath);
         Directory.Delete(extractDir, true);
 
@@ -163,6 +177,12 @@ public sealed class ToolManager
 
         chmod?.WaitForExit();
     }
+
+    private static string? ResolveOptionalBinary(string directory, string fileName)
+    {
+        var path = Path.Combine(directory, fileName);
+        return File.Exists(path) ? path : null;
+    }
 }
 
-public sealed record ToolPaths(string YtDlpPath, string FfmpegDirectory);
+public sealed record ToolPaths(string YtDlpPath, string FfmpegDirectory, string? FfplayPath);

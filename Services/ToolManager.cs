@@ -80,12 +80,15 @@ public sealed class ToolManager
         var ffmpegDir = Path.Combine(toolsRoot, "ffmpeg");
         Directory.CreateDirectory(ffmpegDir);
 
-        var ffmpegBinary = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine(ffmpegDir, "ffmpeg.exe")
-            : Path.Combine(ffmpegDir, "ffmpeg");
+        var ffmpegName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg";
+        var ffprobeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffprobe.exe" : "ffprobe";
+        var ffmpegBinary = Path.Combine(ffmpegDir, ffmpegName);
+        var ffprobeBinary = Path.Combine(ffmpegDir, ffprobeName);
 
-        if (File.Exists(ffmpegBinary))
+        if (File.Exists(ffmpegBinary) && File.Exists(ffprobeBinary))
         {
+            EnsureExecutablePermission(ffmpegBinary);
+            EnsureExecutablePermission(ffprobeBinary);
             return ffmpegDir;
         }
 
@@ -103,24 +106,24 @@ public sealed class ToolManager
         ExtractArchiveToDirectory(archivePath, extractDir);
 
         var extractedBinary = Directory
-            .EnumerateFiles(extractDir, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg", SearchOption.AllDirectories)
+            .EnumerateFiles(extractDir, ffmpegName, SearchOption.AllDirectories)
             .FirstOrDefault(f => string.Equals(Path.GetFileName(Path.GetDirectoryName(f)), "bin", StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException("Unable to find ffmpeg in downloaded archive.");
 
         File.Copy(extractedBinary, ffmpegBinary, overwrite: true);
         EnsureExecutablePermission(ffmpegBinary);
 
-        var ffprobeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffprobe.exe" : "ffprobe";
         var extractedProbe = Directory
             .EnumerateFiles(extractDir, ffprobeName, SearchOption.AllDirectories)
             .FirstOrDefault(f => string.Equals(Path.GetFileName(Path.GetDirectoryName(f)), "bin", StringComparison.OrdinalIgnoreCase));
 
-        if (extractedProbe is not null)
+        if (extractedProbe is null)
         {
-            var ffprobeTarget = Path.Combine(ffmpegDir, ffprobeName);
-            File.Copy(extractedProbe, ffprobeTarget, overwrite: true);
-            EnsureExecutablePermission(ffprobeTarget);
+            throw new InvalidOperationException("Unable to find ffprobe in downloaded archive.");
         }
+
+        File.Copy(extractedProbe, ffprobeBinary, overwrite: true);
+        EnsureExecutablePermission(ffprobeBinary);
 
         var ffplayName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffplay.exe" : "ffplay";
         var extractedPlay = Directory

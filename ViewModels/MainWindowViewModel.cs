@@ -18,6 +18,7 @@ public class MainWindowViewModel : ObservableObject
 
     private string searchQuery = string.Empty;
     private string status = string.Empty;
+    private string searchLogs = string.Empty;
     private bool isSearching;
     private YouTubeVideo? selectedVideo;
 
@@ -76,6 +77,12 @@ public class MainWindowViewModel : ObservableObject
         set => SetProperty(ref status, value);
     }
 
+    public string SearchLogs
+    {
+        get => searchLogs;
+        set => SetProperty(ref searchLogs, value);
+    }
+
     public YouTubeVideo? SelectedVideo
     {
         get => selectedVideo;
@@ -122,6 +129,7 @@ public class MainWindowViewModel : ObservableObject
 
         IsSearching = true;
         Status = "Searching...";
+        SearchLogs = string.Empty;
         Videos.Clear();
 
         searchCts?.Dispose();
@@ -129,7 +137,14 @@ public class MainWindowViewModel : ObservableObject
 
         try
         {
-            var items = await videoService.SearchAsync(SearchQuery.Trim(), searchCts.Token);
+            var log = new Progress<string>(message =>
+            {
+                SearchLogs = string.IsNullOrWhiteSpace(SearchLogs)
+                    ? message
+                    : $"{SearchLogs}{Environment.NewLine}{message}";
+            });
+
+            var items = await videoService.SearchAsync(SearchQuery.Trim(), searchCts.Token, log);
             foreach (var item in items.OrderByDescending(v => v.view_count))
             {
                 Videos.Add(item);

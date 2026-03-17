@@ -15,9 +15,11 @@ public class VideoService
         this.settingsService = settingsService;
     }
 
-    public async Task<List<YouTubeVideo>> SearchAsync(string query, CancellationToken cancellationToken)
+    public async Task<List<YouTubeVideo>> SearchAsync(string query, CancellationToken cancellationToken, IProgress<string>? logger = null)
     {
+        logger?.Report("Ensuring yt-dlp is available...");
         var ytDlpPath = await toolManager.EnsureYtDlpAsync();
+        logger?.Report($"Using yt-dlp: {ytDlpPath}");
         var results = new List<YouTubeVideo>();
 
         var psi = new ProcessStartInfo
@@ -35,6 +37,8 @@ public class VideoService
         psi.ArgumentList.Add("--ignore-errors");
         psi.ArgumentList.Add("--no-warnings");
         psi.ArgumentList.Add($"ytsearch20:{query}");
+
+        logger?.Report($"Running search for '{query}'...");
 
         using var process = Process.Start(psi) ?? throw new InvalidOperationException("Unable to start yt-dlp.");
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
@@ -61,14 +65,24 @@ public class VideoService
                 }
             }
 
+            logger?.Report($"yt-dlp exited with code {process.ExitCode}. Parsed {results.Count} videos.");
+
+            var stderrLines = stderr
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToList();
+
+            if (stderrLines.Count > 0)
+            {
+                foreach (var line in stderrLines.TakeLast(6))
+                {
+                    logger?.Report($"yt-dlp: {line}");
+                }
+            }
+
             if (process.ExitCode != 0 && results.Count == 0)
             {
-                var stderrLines = stderr
-                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(line => line.Trim())
-                    .Where(line => !string.IsNullOrWhiteSpace(line))
-                    .ToList();
-
                 var details = stderrLines.Count > 0 ? string.Join(Environment.NewLine, stderrLines.TakeLast(6)) : "Unknown yt-dlp error.";
                 throw new InvalidOperationException($"yt-dlp search failed (exit code {process.ExitCode}). {details}");
             }

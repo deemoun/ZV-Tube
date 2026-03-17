@@ -19,19 +19,23 @@ public class VideoService
     {
         var tools = await toolManager.EnsureToolsAsync();
         var results = new List<YouTubeVideo>();
+        var stderrLines = new List<string>();
 
         var psi = new ProcessStartInfo
         {
             FileName = tools.YtDlpPath,
-            Arguments = $"ytsearch30:\"{query}\" --print-json --skip-download",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        psi.ArgumentList.Add("--print-json");
+        psi.ArgumentList.Add("--skip-download");
+        psi.ArgumentList.Add("--no-warnings");
+        psi.ArgumentList.Add($"ytsearch30:{query}");
 
         using var process = Process.Start(psi) ?? throw new InvalidOperationException("Unable to start yt-dlp.");
-        var stderrDrainTask = process.StandardError.ReadToEndAsync();
+        var stderrDrainTask = DrainStderrAsync(process, stderrLines);
 
         try
         {
@@ -51,6 +55,13 @@ public class VideoService
             }
 
             await process.WaitForExitAsync(cancellationToken);
+
+            if (process.ExitCode != 0)
+            {
+                var details = stderrLines.Count > 0 ? string.Join(Environment.NewLine, stderrLines.TakeLast(6)) : "Unknown yt-dlp error.";
+                throw new InvalidOperationException($"yt-dlp search failed (exit code {process.ExitCode}). {details}");
+            }
+
             return results;
         }
         finally
@@ -111,12 +122,22 @@ public class VideoService
         var psi = new ProcessStartInfo
         {
             FileName = tools.YtDlpPath,
-            Arguments = $"{modeArgs} --ffmpeg-location \"{tools.FfmpegDirectory}\" -o \"{GetOutputPattern(video)}\" \"{video.Url}\"",
             UseShellExecute = false,
             RedirectStandardError = true,
             RedirectStandardOutput = true,
             CreateNoWindow = true
         };
+
+        foreach (var arg in modeArgs.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        psi.ArgumentList.Add("--ffmpeg-location");
+        psi.ArgumentList.Add(tools.FfmpegDirectory);
+        psi.ArgumentList.Add("-o");
+        psi.ArgumentList.Add(GetOutputPattern(video));
+        psi.ArgumentList.Add(video.Url);
 
         using var process = Process.Start(psi);
         if (process is null)
@@ -155,6 +176,20 @@ public class VideoService
         catch
         {
             return false;
+        }
+    }
+
+    private static async Task DrainStderrAsync(Process process, List<string> stderrLines)
+    {
+        while (!process.StandardError.EndOfStream)
+        {
+            var line = await process.StandardError.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            stderrLines.Add(line.Trim());
         }
     }
 

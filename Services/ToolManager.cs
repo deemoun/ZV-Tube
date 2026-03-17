@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace ZVTube.Services;
 
@@ -88,18 +89,8 @@ public sealed class ToolManager
             return ffmpegDir;
         }
 
-        var archivePath = Path.Combine(ffmpegDir, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.zip" : "ffmpeg-linux64.zip");
-        var url = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-lgpl.zip";
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            url = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-lgpl.zip";
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            url = "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-macos64-lgpl.zip";
-            archivePath = Path.Combine(ffmpegDir, "ffmpeg-macos64.zip");
-        }
+        var url = await ResolveFfmpegArchiveUrlAsync();
+        var archivePath = Path.Combine(ffmpegDir, Path.GetFileName(new Uri(url).LocalPath));
 
         await DownloadFileAsync(url, archivePath);
 
@@ -158,6 +149,62 @@ public sealed class ToolManager
         await using var source = await response.Content.ReadAsStreamAsync();
         await using var destination = File.Create(targetPath);
         await source.CopyToAsync(destination);
+    }
+
+    private static async Task<string> ResolveFfmpegArchiveUrlAsync()
+    {
+        const string latestReleaseApi = "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest";
+
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("ZV-Tube");
+
+        using var response = await http.GetAsync(latestReleaseApi, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var doc = await JsonDocument.ParseAsync(stream);
+
+        if (!doc.RootElement.TryGetProperty("assets", out var assets))
+        {
+            throw new InvalidOperationException("Unable to resolve FFmpeg download URL from release metadata.");
+        }
+
+        var platformToken = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "win64"
+            : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+                ? "macos64"
+                : "linux64";
+
+        string? bestCandidate = null;
+
+        foreach (var asset in assets.EnumerateArray())
+        {
+            var name = asset.GetProperty("name").GetString();
+            var downloadUrl = asset.GetProperty("browser_download_url").GetString();
+
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(downloadUrl))
+            {
+                continue;
+            }
+
+            if (!name.Contains(platformToken, StringComparison.OrdinalIgnoreCase) || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!name.Contains("-gpl", StringComparison.OrdinalIgnoreCase) && !name.Contains("-lgpl", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (bestCandidate is null || name.Contains("-lgpl", StringComparison.OrdinalIgnoreCase))
+            {
+                bestCandidate = downloadUrl;
+            }
+        }
+
+        return bestCandidate
+            ?? throw new InvalidOperationException($"Unable to find a compatible FFmpeg build for platform token '{platformToken}'.");
     }
 
     private static void EnsureExecutablePermission(string filePath)

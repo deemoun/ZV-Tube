@@ -31,10 +31,10 @@ public class MainWindowViewModel : ObservableObject
 
         Status = localization.Text("StatusIdle");
         SearchCommand = new RelayCommand(SearchOrStop);
-        DownloadAudioCommand = new AsyncRelayCommand(DownloadAudioAsync, () => SelectedVideo is not null);
-        DownloadVideoCommand = new AsyncRelayCommand(DownloadVideoAsync, () => SelectedVideo is not null);
-        PlayAudioCommand = new AsyncRelayCommand(PlayAudioAsync, () => SelectedVideo is not null);
-        PlayVideoCommand = new AsyncRelayCommand(PlayVideoAsync, () => SelectedVideo is not null);
+        DownloadAudioCommand = new AsyncRelayCommand(DownloadAudioAsync, () => SelectedVideo is not null, HandleCommandError);
+        DownloadVideoCommand = new AsyncRelayCommand(DownloadVideoAsync, () => SelectedVideo is not null, HandleCommandError);
+        PlayAudioCommand = new AsyncRelayCommand(PlayAudioAsync, () => SelectedVideo is not null, HandleCommandError);
+        PlayVideoCommand = new AsyncRelayCommand(PlayVideoAsync, () => SelectedVideo is not null, HandleCommandError);
         OpenFolderCommand = new RelayCommand(OpenDownloadFolder);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
         OpenInBrowserCommand = new RelayCommand(OpenInBrowser, () => SelectedVideo is not null);
@@ -245,5 +245,10 @@ public class MainWindowViewModel : ObservableObject
         (PlayAudioCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
         (PlayVideoCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
         (OpenInBrowserCommand as RelayCommand)?.NotifyCanExecuteChanged();
+    }
+
+    private void HandleCommandError(Exception ex)
+    {
+        Status = $"Error: {ex.Message}";
     }
 }

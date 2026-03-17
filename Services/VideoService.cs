@@ -30,6 +30,9 @@ public class VideoService
         };
         psi.ArgumentList.Add("--print-json");
         psi.ArgumentList.Add("--skip-download");
+        // Some search entries can be region blocked/private/deleted.
+        // Ignore those per-entry failures so yt-dlp can keep returning valid results.
+        psi.ArgumentList.Add("--ignore-errors");
         psi.ArgumentList.Add("--no-warnings");
         psi.ArgumentList.Add($"ytsearch20:{query}");
 
@@ -58,7 +61,7 @@ public class VideoService
                 }
             }
 
-            if (process.ExitCode != 0)
+            if (process.ExitCode != 0 && results.Count == 0)
             {
                 var stderrLines = stderr
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries)

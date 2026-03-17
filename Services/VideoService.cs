@@ -79,15 +79,19 @@ public class VideoService
 
     public string DownloadFolder => settingsService.Load().DownloadFolder;
 
-    public void OpenDownloadFolder() => OpenWithShell(DownloadFolder);
+    public bool OpenDownloadFolder()
+    {
+        Directory.CreateDirectory(DownloadFolder);
+        return TryOpenWithShell(DownloadFolder);
+    }
 
-    public void OpenInBrowser(YouTubeVideo video) => OpenWithShell(video.Url);
+    public bool OpenInBrowser(YouTubeVideo video) => TryOpenWithShell(video.Url);
 
     public void PlayVideo(YouTubeVideo video)
     {
         if (!TryStartProcess("mpv", $"\"{video.Url}\"") && !TryStartProcess("mpv.exe", $"\"{video.Url}\""))
         {
-            OpenWithShell(video.Url);
+            TryOpenWithShell(video.Url);
         }
     }
 
@@ -95,7 +99,7 @@ public class VideoService
     {
         if (!TryStartProcess("mpv", $"--no-video \"{video.Url}\"") && !TryStartProcess("mpv.exe", $"--no-video \"{video.Url}\""))
         {
-            OpenWithShell(video.Url);
+            TryOpenWithShell(video.Url);
         }
     }
 
@@ -137,13 +141,21 @@ public class VideoService
         }
     }
 
-    private static void OpenWithShell(string target)
+    private static bool TryOpenWithShell(string target)
     {
-        Process.Start(new ProcessStartInfo
+        try
         {
-            FileName = target,
-            UseShellExecute = true
-        });
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = target,
+                UseShellExecute = true
+            });
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private string GetOutputPattern(YouTubeVideo video)

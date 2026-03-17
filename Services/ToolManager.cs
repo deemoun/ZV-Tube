@@ -41,8 +41,9 @@ public sealed class ToolManager
         var executableName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "yt-dlp.exe" : "yt-dlp";
         var ytDlpPath = Path.Combine(ytDlpDir, executableName);
 
-        if (File.Exists(ytDlpPath))
+        if (File.Exists(ytDlpPath) && new FileInfo(ytDlpPath).Length > 0)
         {
+            EnsureExecutablePermission(ytDlpPath);
             return ytDlpPath;
         }
 

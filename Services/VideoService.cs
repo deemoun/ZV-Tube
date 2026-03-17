@@ -141,7 +141,11 @@ public class VideoService
         var tools = await toolManager.EnsureToolsAsync();
         if (!string.IsNullOrWhiteSpace(tools.FfplayPath))
         {
-            return TryStartProcess(tools.FfplayPath, ["-autoexit", "-window_title", "ZV-Tube", video.Url], useShellExecute: false);
+            var streamUrl = await ResolveStreamUrlAsync(tools.YtDlpPath, video.Url, "bestvideo*+bestaudio/best");
+            if (!string.IsNullOrWhiteSpace(streamUrl))
+            {
+                return TryStartProcess(tools.FfplayPath, ["-autoexit", "-window_title", "ZV-Tube", streamUrl], useShellExecute: false);
+            }
         }
 
         return TryOpenWithShell(video.Url);
@@ -152,10 +156,57 @@ public class VideoService
         var tools = await toolManager.EnsureToolsAsync();
         if (!string.IsNullOrWhiteSpace(tools.FfplayPath))
         {
-            return TryStartProcess(tools.FfplayPath, ["-nodisp", "-autoexit", "-window_title", "ZV-Tube", video.Url], useShellExecute: false);
+            var streamUrl = await ResolveStreamUrlAsync(tools.YtDlpPath, video.Url, "bestaudio/best");
+            if (!string.IsNullOrWhiteSpace(streamUrl))
+            {
+                return TryStartProcess(tools.FfplayPath, ["-nodisp", "-autoexit", "-window_title", "ZV-Tube", streamUrl], useShellExecute: false);
+            }
         }
 
         return TryOpenWithShell(video.Url);
+    }
+
+    private static async Task<string?> ResolveStreamUrlAsync(string ytDlpPath, string videoUrl, string formatSelector)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = ytDlpPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            psi.ArgumentList.Add("--get-url");
+            psi.ArgumentList.Add("--no-warnings");
+            psi.ArgumentList.Add("-f");
+            psi.ArgumentList.Add(formatSelector);
+            psi.ArgumentList.Add(videoUrl);
+
+            using var process = Process.Start(psi);
+            if (process is null)
+            {
+                return null;
+            }
+
+            var stdout = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                return null;
+            }
+
+            return stdout
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line));
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private async Task<DownloadResult> RunYtDlpAsync(YouTubeVideo video, Action<List<string>> modeArgsBuilder)

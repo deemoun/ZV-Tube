@@ -33,28 +33,38 @@ public class VideoService
         };
 
         using var process = Process.Start(psi) ?? throw new InvalidOperationException("Unable to start yt-dlp.");
+        var stderrDrainTask = process.StandardError.ReadToEndAsync();
 
-        while (!process.StandardOutput.EndOfStream && !cancellationToken.IsCancellationRequested)
+        try
         {
-            var line = await process.StandardOutput.ReadLineAsync(cancellationToken);
-            if (line?.TrimStart().StartsWith("{") != true)
+            while (!process.StandardOutput.EndOfStream)
             {
-                continue;
+                var line = await process.StandardOutput.ReadLineAsync(cancellationToken);
+                if (line?.TrimStart().StartsWith("{") != true)
+                {
+                    continue;
+                }
+
+                var video = JsonSerializer.Deserialize<YouTubeVideo>(line);
+                if (video is not null)
+                {
+                    results.Add(video);
+                }
             }
 
-            var video = JsonSerializer.Deserialize<YouTubeVideo>(line);
-            if (video is not null)
-            {
-                results.Add(video);
-            }
+            await process.WaitForExitAsync(cancellationToken);
+            return results;
         }
-
-        if (!process.HasExited)
+        finally
         {
-            process.Kill(true);
-        }
+            if (!process.HasExited)
+            {
+                process.Kill(true);
+                await process.WaitForExitAsync();
+            }
 
-        return results;
+            await stderrDrainTask;
+        }
     }
 
     public async Task<string> DownloadAudioAsync(YouTubeVideo video)

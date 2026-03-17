@@ -33,8 +33,8 @@ public class MainWindowViewModel : ObservableObject
         SearchCommand = new RelayCommand(SearchOrStop);
         DownloadAudioCommand = new AsyncRelayCommand(DownloadAudioAsync, () => SelectedVideo is not null);
         DownloadVideoCommand = new AsyncRelayCommand(DownloadVideoAsync, () => SelectedVideo is not null);
-        PlayAudioCommand = new RelayCommand(PlayAudio, () => SelectedVideo is not null);
-        PlayVideoCommand = new RelayCommand(PlayVideo, () => SelectedVideo is not null);
+        PlayAudioCommand = new AsyncRelayCommand(PlayAudioAsync, () => SelectedVideo is not null);
+        PlayVideoCommand = new AsyncRelayCommand(PlayVideoAsync, () => SelectedVideo is not null);
         OpenFolderCommand = new RelayCommand(OpenDownloadFolder);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
         OpenInBrowserCommand = new RelayCommand(OpenInBrowser, () => SelectedVideo is not null);
@@ -182,18 +182,24 @@ public class MainWindowViewModel : ObservableObject
         Status = await videoService.DownloadVideoAsync(SelectedVideo);
     }
 
-    private void PlayAudio()
+    private async Task PlayAudioAsync()
     {
         if (SelectedVideo is null) return;
-        videoService.PlayAudio(SelectedVideo);
-        Status = $"Playing: {SelectedVideo.title}";
+
+        var played = await videoService.PlayAudioAsync(SelectedVideo);
+        Status = played
+            ? $"Playing audio: {SelectedVideo.title}"
+            : "Unable to start internal audio player.";
     }
 
-    private void PlayVideo()
+    private async Task PlayVideoAsync()
     {
         if (SelectedVideo is null) return;
-        videoService.PlayVideo(SelectedVideo);
-        Status = $"Playing: {SelectedVideo.title}";
+
+        var played = await videoService.PlayVideoAsync(SelectedVideo);
+        Status = played
+            ? $"Playing video: {SelectedVideo.title}"
+            : "Unable to start internal video player.";
     }
 
     private void OpenDownloadFolder()
@@ -236,8 +242,8 @@ public class MainWindowViewModel : ObservableObject
     {
         (DownloadAudioCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
         (DownloadVideoCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
-        (PlayAudioCommand as RelayCommand)?.NotifyCanExecuteChanged();
-        (PlayVideoCommand as RelayCommand)?.NotifyCanExecuteChanged();
+        (PlayAudioCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
+        (PlayVideoCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
         (OpenInBrowserCommand as RelayCommand)?.NotifyCanExecuteChanged();
     }
 }

@@ -4,7 +4,7 @@ Cross-platform YouTube search/downloader/player desktop app built with **Avaloni
 
 ## Features
 - Search YouTube using `yt-dlp` JSON output.
-- Play selected video/audio (uses `mpv` if available; falls back to browser).
+- Play selected video/audio with the internally managed `ffplay` binary (downloaded with FFmpeg); browser fallback remains available.
 - Download audio (mp3) and video (mp4) through `yt-dlp`.
 - Light/Dark theme toggle.
 - Settings persisted in user-local folder:
@@ -27,4 +27,4 @@ pwsh -File scripts/build-windows.ps1
 ```
 
 ## Notes
-- `mpv` is optional for playback.
+- Playback uses `ffplay` from the bundled FFmpeg tools to stay cross-platform and avoid external player dependencies.

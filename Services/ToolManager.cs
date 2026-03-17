@@ -14,6 +14,21 @@ public sealed class ToolManager
         this.settingsService = settingsService;
     }
 
+    public async Task<string> EnsureYtDlpAsync()
+    {
+        await setupLock.WaitAsync();
+        try
+        {
+            var toolsRoot = Path.Combine(settingsService.AppDirectory, "tools");
+            Directory.CreateDirectory(toolsRoot);
+            return await DownloadYtDlpIfNeededAsync(toolsRoot);
+        }
+        finally
+        {
+            setupLock.Release();
+        }
+    }
+
     public async Task<ToolPaths> EnsureToolsAsync()
     {
         await setupLock.WaitAsync();
@@ -22,8 +37,8 @@ public sealed class ToolManager
             var toolsRoot = Path.Combine(settingsService.AppDirectory, "tools");
             Directory.CreateDirectory(toolsRoot);
 
-            var ytDlpPath = await EnsureYtDlpAsync(toolsRoot);
-            var ffmpegDirectory = await EnsureFfmpegAsync(toolsRoot);
+            var ytDlpPath = await DownloadYtDlpIfNeededAsync(toolsRoot);
+            var ffmpegDirectory = await DownloadFfmpegIfNeededAsync(toolsRoot);
 
             return new ToolPaths(ytDlpPath, ffmpegDirectory);
         }
@@ -33,7 +48,7 @@ public sealed class ToolManager
         }
     }
 
-    private static async Task<string> EnsureYtDlpAsync(string toolsRoot)
+    private static async Task<string> DownloadYtDlpIfNeededAsync(string toolsRoot)
     {
         var ytDlpDir = Path.Combine(toolsRoot, "yt-dlp");
         Directory.CreateDirectory(ytDlpDir);
@@ -57,7 +72,7 @@ public sealed class ToolManager
         return ytDlpPath;
     }
 
-    private static async Task<string> EnsureFfmpegAsync(string toolsRoot)
+    private static async Task<string> DownloadFfmpegIfNeededAsync(string toolsRoot)
     {
         var ffmpegDir = Path.Combine(toolsRoot, "ffmpeg");
         Directory.CreateDirectory(ffmpegDir);

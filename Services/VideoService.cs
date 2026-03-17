@@ -17,13 +17,13 @@ public class VideoService
 
     public async Task<List<YouTubeVideo>> SearchAsync(string query, CancellationToken cancellationToken)
     {
-        var tools = await toolManager.EnsureToolsAsync();
+        var ytDlpPath = await toolManager.EnsureYtDlpAsync();
         var results = new List<YouTubeVideo>();
         var stderrLines = new List<string>();
 
         var psi = new ProcessStartInfo
         {
-            FileName = tools.YtDlpPath,
+            FileName = ytDlpPath,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

@@ -10,7 +10,8 @@ Cross-platform YouTube search/downloader/player desktop app built with **Avaloni
 - Settings persisted in user-local folder:
   - Windows: `%LOCALAPPDATA%/ZV-Tube/settings.json`
   - Linux/macOS: `$HOME/.local/share` equivalent via .NET `LocalApplicationData`.
-- `yt-dlp` binary is auto-downloaded per-platform on first use.
+- `yt-dlp` binary is auto-downloaded per-platform on first use and cached in the app-local `tools` folder.
+- `ffmpeg` is also auto-downloaded, cached locally, and passed to `yt-dlp` via `--ffmpeg-location` (no PATH dependency).
 - Localization-ready string service abstraction.
 
 ## Build
@@ -26,5 +27,4 @@ pwsh -File scripts/build-windows.ps1
 ```
 
 ## Notes
-- `ffmpeg` should be installed and available in PATH for audio extraction/merging.
 - `mpv` is optional for playback.

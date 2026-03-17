@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-    <AvaloniaXaml Include="**\*.axaml" />
   </ItemGroup>
 
   <ItemGroup>

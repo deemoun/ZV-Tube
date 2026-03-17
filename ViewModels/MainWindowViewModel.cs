@@ -29,7 +29,7 @@ public class MainWindowViewModel : ObservableObject
         settings = settingsService.Load();
 
         Status = localization.Text("StatusIdle");
-        SearchCommand = new AsyncRelayCommand(SearchOrStopAsync);
+        SearchCommand = new RelayCommand(SearchOrStop);
         DownloadAudioCommand = new AsyncRelayCommand(DownloadAudioAsync, () => SelectedVideo is not null);
         DownloadVideoCommand = new AsyncRelayCommand(DownloadVideoAsync, () => SelectedVideo is not null);
         PlayAudioCommand = new RelayCommand(PlayAudio, () => SelectedVideo is not null);
@@ -100,18 +100,20 @@ public class MainWindowViewModel : ObservableObject
         }
     }
 
-    private async Task SearchOrStopAsync()
+    private void SearchOrStop()
     {
         if (IsSearching)
         {
             searchCts?.Cancel();
-            IsSearching = false;
-            searchCts?.Dispose();
-            searchCts = null;
-            Status = "Search stopped.";
+            Status = "Stopping search...";
             return;
         }
 
+        _ = RunSearchAsync();
+    }
+
+    private async Task RunSearchAsync()
+    {
         if (string.IsNullOrWhiteSpace(SearchQuery))
         {
             Status = "Please enter a query.";

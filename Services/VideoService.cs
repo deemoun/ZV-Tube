@@ -32,7 +32,7 @@ public class VideoService
         psi.ArgumentList.Add("--print-json");
         psi.ArgumentList.Add("--skip-download");
         psi.ArgumentList.Add("--no-warnings");
-        psi.ArgumentList.Add($"ytsearch30:{query}");
+        psi.ArgumentList.Add($"ytsearch20:{query}");
 
         using var process = Process.Start(psi) ?? throw new InvalidOperationException("Unable to start yt-dlp.");
         var stderrDrainTask = DrainStderrAsync(process, stderrLines);

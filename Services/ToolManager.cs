@@ -233,6 +233,8 @@ public sealed class ToolManager
 
     private static void ExtractArchiveToDirectory(string archivePath, string destinationDirectory)
     {
+        Directory.CreateDirectory(destinationDirectory);
+
         if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
             ZipFile.ExtractToDirectory(archivePath, destinationDirectory);
@@ -243,15 +245,21 @@ public sealed class ToolManager
         {
             FileName = "tar",
             ArgumentList = { "-xf", archivePath, "-C", destinationDirectory },
+            RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
         });
 
+        var errorOutput = tar?.StandardError.ReadToEnd();
         tar?.WaitForExit();
 
         if (tar is null || tar.ExitCode != 0)
         {
-            throw new InvalidOperationException($"Unable to extract FFmpeg archive '{Path.GetFileName(archivePath)}'.");
+            var details = string.IsNullOrWhiteSpace(errorOutput)
+                ? string.Empty
+                : $" tar stderr: {errorOutput.Trim()}";
+
+            throw new InvalidOperationException($"Unable to extract FFmpeg archive '{Path.GetFileName(archivePath)}'.{details}");
         }
     }
 

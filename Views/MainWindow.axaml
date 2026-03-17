@@ -23,10 +23,10 @@
     <StackPanel Spacing="8">
       <TextBlock Text="{Binding SearchPrompt}" FontWeight="Bold" FontSize="15"/>
 
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <Grid ColumnDefinitions="*,Auto,Auto">
         <TextBox Grid.Column="0" Watermark="YouTube search..." Text="{Binding SearchQuery}"/>
-        <Button Grid.Column="1" Content="{Binding SearchButtonText}" Command="{Binding SearchCommand}"/>
-        <Button Grid.Column="2" Content="📁 Open folder" Command="{Binding OpenFolderCommand}"/>
+        <Button Grid.Column="1" Margin="8,0,0,0" Content="{Binding SearchButtonText}" Command="{Binding SearchCommand}"/>
+        <Button Grid.Column="2" Margin="8,0,0,0" Content="📁 Open folder" Command="{Binding OpenFolderCommand}"/>
       </Grid>
 
       <TextBlock Text="{Binding Status}"/>

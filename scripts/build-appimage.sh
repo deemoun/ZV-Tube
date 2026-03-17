@@ -17,8 +17,19 @@ dotnet publish "ZV Player.csproj" \
 
 echo "Linux single-file binary published to $PUBLISH_DIR"
 
+rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/bin"
 cp -r "$PUBLISH_DIR"/* "$APPDIR/usr/bin/"
+
+cat > "$APPDIR/AppRun" <<'APP_RUN'
+#!/usr/bin/env bash
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$HERE/usr/bin/ZV-Tube" "$@"
+APP_RUN
+chmod +x "$APPDIR/AppRun"
+chmod +x "$APPDIR/usr/bin/ZV-Tube"
 
 cat > "$APPDIR/ZV-Tube.desktop" <<DESKTOP
 [Desktop Entry]

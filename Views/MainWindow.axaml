@@ -20,7 +20,7 @@
       <MenuItem Header="🌓 Theme" Command="{Binding ToggleThemeCommand}"/>
     </Menu>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
       <TextBlock Grid.Row="0" Margin="0,0,0,8" Text="{Binding SearchPrompt}" FontWeight="Bold" FontSize="15"/>
 
       <Grid Grid.Row="1" Margin="0,0,0,8" ColumnDefinitions="*,Auto,Auto">
@@ -62,6 +62,15 @@
           </MultiBinding>
         </Button.Content>
       </Button>
+
+      <Border Grid.Row="6" Padding="8" CornerRadius="4" Background="#0D000000" BorderBrush="#33000000" BorderThickness="1">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Search logs" FontWeight="SemiBold"/>
+          <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">
+            <TextBlock Text="{Binding SearchLogs}" FontFamily="Consolas" TextWrapping="Wrap"/>
+          </ScrollViewer>
+        </StackPanel>
+      </Border>
     </Grid>
   </DockPanel>
 </Window>

@@ -34,7 +34,7 @@ public class MainWindowViewModel : ObservableObject
         DownloadVideoCommand = new AsyncRelayCommand(DownloadVideoAsync, () => SelectedVideo is not null);
         PlayAudioCommand = new RelayCommand(PlayAudio, () => SelectedVideo is not null);
         PlayVideoCommand = new RelayCommand(PlayVideo, () => SelectedVideo is not null);
-        OpenFolderCommand = new RelayCommand(videoService.OpenDownloadFolder);
+        OpenFolderCommand = new RelayCommand(OpenDownloadFolder);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
         OpenInBrowserCommand = new RelayCommand(OpenInBrowser, () => SelectedVideo is not null);
 
@@ -177,6 +177,15 @@ public class MainWindowViewModel : ObservableObject
         if (SelectedVideo is null) return;
         videoService.PlayVideo(SelectedVideo);
         Status = $"Playing: {SelectedVideo.title}";
+    }
+
+    private void OpenDownloadFolder()
+    {
+        var opened = videoService.OpenDownloadFolder();
+        if (!opened)
+        {
+            Status = "Unable to open download folder.";
+        }
     }
 
     private void OpenInBrowser()

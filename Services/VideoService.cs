@@ -226,8 +226,13 @@ public class VideoService
 
         if (requireFfmpeg)
         {
+            if (string.IsNullOrWhiteSpace(tools.FfmpegDirectory))
+            {
+                return new DownloadResult(false, null, "FFmpeg is not available, so separate video/audio streams cannot be merged. Please retry after tools finish downloading.");
+            }
+
             psi.ArgumentList.Add("-f");
-            psi.ArgumentList.Add(!string.IsNullOrWhiteSpace(tools.FfmpegDirectory) ? "bestvideo*+bestaudio/best" : "best[ext=mp4]/best");
+            psi.ArgumentList.Add("bestvideo*+bestaudio/best");
         }
 
         if (!string.IsNullOrWhiteSpace(tools.FfmpegDirectory))

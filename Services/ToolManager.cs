@@ -46,8 +46,7 @@ public sealed class ToolManager
             }
             catch
             {
-                // Degrade gracefully when FFmpeg cannot be resolved (e.g. temporary
-                // network issues). Search and direct media download still work.
+                ffmpegDirectory = TryResolveSystemFfmpegDirectory();
             }
 
             var ffplayPath = ffmpegDirectory is null
@@ -281,6 +280,60 @@ public sealed class ToolManager
     {
         var path = Path.Combine(directory, fileName);
         return File.Exists(path) ? path : null;
+    }
+
+    private static string? TryResolveSystemFfmpegDirectory()
+    {
+        var ffmpegName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg";
+        var ffprobeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffprobe.exe" : "ffprobe";
+
+        var ffmpegPath = FindOnPath(ffmpegName);
+        var ffprobePath = FindOnPath(ffprobeName);
+
+        if (string.IsNullOrWhiteSpace(ffmpegPath) || string.IsNullOrWhiteSpace(ffprobePath))
+        {
+            return null;
+        }
+
+        var ffmpegDir = Path.GetDirectoryName(ffmpegPath);
+        var ffprobeDir = Path.GetDirectoryName(ffprobePath);
+
+        if (string.IsNullOrWhiteSpace(ffmpegDir) || string.IsNullOrWhiteSpace(ffprobeDir))
+        {
+            return null;
+        }
+
+        return string.Equals(ffmpegDir, ffprobeDir, StringComparison.OrdinalIgnoreCase)
+            ? ffmpegDir
+            : null;
+    }
+
+    private static string? FindOnPath(string fileName)
+    {
+        var path = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        var directories = path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var directory in directories)
+        {
+            try
+            {
+                var fullPath = Path.Combine(directory, fileName);
+                if (File.Exists(fullPath))
+                {
+                    return fullPath;
+                }
+            }
+            catch
+            {
+                // Ignore malformed PATH entries.
+            }
+        }
+
+        return null;
     }
 }
 

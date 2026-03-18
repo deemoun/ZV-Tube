@@ -54,6 +54,3 @@ pwsh -File scripts/build-windows.ps1
 - **Host shell:** `pwsh` (Windows)
 - **Outputs:**
   - Publish directory: `artifacts/windows-x64`
-
-## Notes
-- Playback uses `ffplay` from bundled FFmpeg tools to stay cross-platform and avoid external player dependencies.

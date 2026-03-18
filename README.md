@@ -54,3 +54,7 @@ pwsh -File scripts/build-windows.ps1
 - **Host shell:** `pwsh` (Windows)
 - **Outputs:**
   - Publish directory: `artifacts/windows-x64`
+
+## Support
+
+If you’d like to support development of ZV Tube, please use the **Funding** button on this repository and consider donating.

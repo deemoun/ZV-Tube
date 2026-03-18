@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
         x:Class="ZVTube.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="ZV Tube 2.0">
+        Title="ZV Tube">
 
   <DockPanel Margin="10">
     <Menu DockPanel.Dock="Top">
@@ -18,7 +18,7 @@
         <MenuItem Header="🎬 Play video" Command="{Binding PlayVideoCommand}"/>
       </MenuItem>
       <MenuItem Header="🌓 Theme" Command="{Binding ToggleThemeCommand}"/>
-      <MenuItem Header="ℹ About" Click="OnAboutClicked"/>
+      <MenuItem Header="📄 About" Click="OnAboutClicked"/>
     </Menu>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">

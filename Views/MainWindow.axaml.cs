@@ -26,16 +26,16 @@ public partial class MainWindow : Window
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
 
-        var versionButton = new Button
+        var versionField = new TextBox
         {
-            Content = $"Version: {version}",
-            IsEnabled = false
+            Text = $"Version: {version}",
+            IsReadOnly = true
         };
 
-        var developerButton = new Button
+        var developerField = new TextBox
         {
-            Content = "Developer: Dmitry Yarygin",
-            IsEnabled = false
+            Text = "Developer: Dmitry Yarygin",
+            IsReadOnly = true
         };
 
         var repoUrl = "https://github.com/deemoun/ZV-Tube";
@@ -64,8 +64,8 @@ public partial class MainWindow : Window
                 Margin = new Avalonia.Thickness(16),
                 Children =
                 {
-                    versionButton,
-                    developerButton,
+                    versionField,
+                    developerField,
                     repoButton,
                     closeButton
                 }

@@ -24,18 +24,16 @@ public partial class MainWindow : Window
 
     private async void OnAboutClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+        var version = GetDisplayVersion();
 
-        var versionField = new TextBox
+        var versionField = new TextBlock
         {
-            Text = $"Version: {version}",
-            IsReadOnly = true
+            Text = $"Version: {version}"
         };
 
-        var developerField = new TextBox
+        var developerField = new TextBlock
         {
-            Text = "Developer: Dmitry Yarygin",
-            IsReadOnly = true
+            Text = "Developer: Dmitry Yarygin"
         };
 
         var repoUrl = "https://github.com/deemoun/ZV-Tube";
@@ -75,6 +73,27 @@ public partial class MainWindow : Window
         closeButton.Click += (_, _) => dialog.Close();
 
         await dialog.ShowDialog(this);
+    }
+
+    private static string GetDisplayVersion()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var informationalVersion = assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
+
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        {
+            return informationalVersion.Split('+')[0];
+        }
+
+        var version = assembly.GetName().Version;
+        if (version is null)
+        {
+            return "Unknown";
+        }
+
+        return version.Revision == 0 ? version.ToString(3) : version.ToString();
     }
 
     private static void OpenUrl(string url)

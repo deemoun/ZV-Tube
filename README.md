@@ -1,4 +1,4 @@
-# ZV Tube (Avalonia)
+# ZV Tube
 
 Cross-platform YouTube search/downloader/player desktop app built with **Avalonia UI** and **.NET 8**, targeting Windows, Linux, and macOS.
 

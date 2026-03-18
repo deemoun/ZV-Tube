@@ -42,11 +42,18 @@ dotnet run --project "ZV Player.csproj"
 ```bash
 bash scripts/build-appimage.sh
 ```
+- **Host shell:** `bash` (Linux)
+- **Outputs:**
+  - Publish directory: `artifacts/linux-x64`
+  - AppImage (when available): `artifacts/ZV-Tube-x86_64.AppImage`
 
 ### Windows publish script
 ```powershell
 pwsh -File scripts/build-windows.ps1
 ```
+- **Host shell:** `pwsh` (Windows)
+- **Outputs:**
+  - Publish directory: `artifacts/windows-x64`
 
 ## Notes
 - Playback uses `ffplay` from bundled FFmpeg tools to stay cross-platform and avoid external player dependencies.

@@ -178,11 +178,8 @@ public class MainWindowViewModel : ObservableObject
     private async Task DownloadVideoAsync()
     {
         if (SelectedVideo is null) return;
-
-        var played = await videoService.PlayAudioAsync(SelectedVideo);
-        Status = played
-            ? $"Playing audio: {SelectedVideo.title}"
-            : "Unable to start internal audio player.";
+        Status = "Downloading video...";
+        Status = await videoService.DownloadVideoAsync(SelectedVideo);
     }
 
     private async Task PlayAudioAsync()

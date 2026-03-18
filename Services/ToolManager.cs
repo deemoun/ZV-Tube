@@ -39,9 +39,20 @@ public sealed class ToolManager
             Directory.CreateDirectory(toolsRoot);
 
             var ytDlpPath = await DownloadYtDlpIfNeededAsync(toolsRoot);
-            var ffmpegDirectory = await DownloadFfmpegIfNeededAsync(toolsRoot);
+            string? ffmpegDirectory = null;
+            try
+            {
+                ffmpegDirectory = await DownloadFfmpegIfNeededAsync(toolsRoot);
+            }
+            catch
+            {
+                // Degrade gracefully when FFmpeg cannot be resolved (e.g. temporary
+                // network issues). Search and direct media download still work.
+            }
 
-            var ffplayPath = ResolveOptionalBinary(ffmpegDirectory, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffplay.exe" : "ffplay");
+            var ffplayPath = ffmpegDirectory is null
+                ? null
+                : ResolveOptionalBinary(ffmpegDirectory, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffplay.exe" : "ffplay");
 
             return new ToolPaths(ytDlpPath, ffmpegDirectory, ffplayPath);
         }
@@ -273,4 +284,4 @@ public sealed class ToolManager
     }
 }
 
-public sealed record ToolPaths(string YtDlpPath, string FfmpegDirectory, string? FfplayPath);
+public sealed record ToolPaths(string YtDlpPath, string? FfmpegDirectory, string? FfplayPath);

@@ -2,6 +2,10 @@
 
 Cross-platform YouTube search/downloader/player desktop app built with **Avalonia UI** and **.NET 8**, targeting Windows, Linux, and macOS.
 
+## Screenshot
+
+![ZV Tube main window](images/zv-tube.png)
+
 ## Features
 - Search YouTube using `yt-dlp` JSON output.
 - Play selected video/audio with the internally managed `ffplay` binary (downloaded with FFmpeg), with browser fallback still available.

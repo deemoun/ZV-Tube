@@ -18,6 +18,18 @@ Cross-platform YouTube search/downloader/player desktop app built with **Avaloni
 - `ffmpeg` is also auto-downloaded, cached locally, and passed to `yt-dlp` via `--ffmpeg-location` (no PATH dependency).
 - Localization-ready string service abstraction.
 
+## Quickstart (Run from source)
+
+```bash
+# Restore/build (optional)
+dotnet build "ZV Player.csproj" -c Debug
+
+# Run
+dotnet run --project "ZV Player.csproj"
+```
+
+> Note: The first launch may take longer while the app downloads required `yt-dlp`/FFmpeg tools.
+
 ## Build
 
 ### Linux AppImage script

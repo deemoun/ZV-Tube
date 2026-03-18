@@ -53,7 +53,7 @@ jobs:
       - name: Build Windows binary
         shell: bash
         run: |
-          ./build-windows.sh
+          bash scripts/build-windows.sh
           cp artifacts/windows-x64/ZV-Tube.exe artifacts/zv-tube-windows-x64
 
       - name: Upload Windows binary

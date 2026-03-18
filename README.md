@@ -2,6 +2,12 @@
 
 Cross-platform YouTube search/downloader/player desktop app built with **Avalonia UI** and **.NET 8**, targeting Windows, Linux, and macOS.
 
+## Prerequisites
+- Required SDK: **.NET 8 SDK** for building/running from source.
+- Supported OS targets: Windows, Linux, macOS.
+- First run requires network access to auto-download `yt-dlp` and FFmpeg tools.
+- Optional packaging dependency: `appimagetool` for Linux AppImage creation.
+
 ## Screenshot
 
 ![ZV Tube main window](images/zv-tube.png)

@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using System.Diagnostics;
+using System.Reflection;
 using ZVTube.ViewModels;
 
 namespace ZVTube.Views;
@@ -18,5 +20,65 @@ public partial class MainWindow : Window
         {
             vm.OpenInBrowserCommand.Execute(null);
         }
+    }
+
+    private async void OnAboutClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+
+        var versionButton = new Button
+        {
+            Content = $"Version: {version}",
+            IsEnabled = false
+        };
+
+        var developerButton = new Button
+        {
+            Content = "Developer: Dmitry Yarygin",
+            IsEnabled = false
+        };
+
+        var repoUrl = "https://github.com/deemoun/ZV-Tube";
+        var repoButton = new Button
+        {
+            Content = $"Repository: {repoUrl}"
+        };
+        repoButton.Click += (_, _) => OpenUrl(repoUrl);
+
+        var closeButton = new Button
+        {
+            Content = "Close",
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
+        };
+
+        var dialog = new Window
+        {
+            Title = "About",
+            Width = 620,
+            Height = 220,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Spacing = 10,
+                Margin = new Avalonia.Thickness(16),
+                Children =
+                {
+                    versionButton,
+                    developerButton,
+                    repoButton,
+                    closeButton
+                }
+            }
+        };
+
+        closeButton.Click += (_, _) => dialog.Close();
+
+        await dialog.ShowDialog(this);
+    }
+
+    private static void OpenUrl(string url)
+    {
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 }

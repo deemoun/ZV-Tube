@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using ZVTube.Models;
 
@@ -132,32 +133,16 @@ public class VideoService
 
     public async Task<bool> PlayVideoAsync(YouTubeVideo video)
     {
-        var tools = await toolManager.EnsureToolsAsync();
-        if (!string.IsNullOrWhiteSpace(tools.FfplayPath))
-        {
-            var streamUrl = await ResolveStreamUrlAsync(tools.YtDlpPath, video.Url, "bestvideo*+bestaudio/best");
-            if (!string.IsNullOrWhiteSpace(streamUrl))
-            {
-                return TryStartProcess(tools.FfplayPath, ["-autoexit", "-window_title", "ZV-Tube", streamUrl], useShellExecute: false);
-            }
-        }
-
-        return TryOpenWithShell(video.Url);
+        var ytDlpPath = await toolManager.EnsureYtDlpAsync();
+        var streamUrl = await ResolveStreamUrlAsync(ytDlpPath, video.Url, "bestvideo*+bestaudio/best");
+        return !string.IsNullOrWhiteSpace(streamUrl) && TryPlayWithInstalledPlayer(streamUrl, audioOnly: false);
     }
 
     public async Task<bool> PlayAudioAsync(YouTubeVideo video)
     {
-        var tools = await toolManager.EnsureToolsAsync();
-        if (!string.IsNullOrWhiteSpace(tools.FfplayPath))
-        {
-            var streamUrl = await ResolveStreamUrlAsync(tools.YtDlpPath, video.Url, "bestaudio/best");
-            if (!string.IsNullOrWhiteSpace(streamUrl))
-            {
-                return TryStartProcess(tools.FfplayPath, ["-nodisp", "-autoexit", "-window_title", "ZV-Tube", streamUrl], useShellExecute: false);
-            }
-        }
-
-        return TryOpenWithShell(video.Url);
+        var ytDlpPath = await toolManager.EnsureYtDlpAsync();
+        var streamUrl = await ResolveStreamUrlAsync(ytDlpPath, video.Url, "bestaudio/best");
+        return !string.IsNullOrWhiteSpace(streamUrl) && TryPlayWithInstalledPlayer(streamUrl, audioOnly: true);
     }
 
     private static async Task<string?> ResolveStreamUrlAsync(string ytDlpPath, string videoUrl, string formatSelector)
@@ -322,6 +307,112 @@ public class VideoService
         }
     }
 
+    private static bool TryPlayWithInstalledPlayer(string streamUrl, bool audioOnly)
+    {
+        foreach (var player in GetCandidatePlayers())
+        {
+            var executable = ResolvePlayerExecutable(player.ExecutableNames, player.KnownLocations);
+            if (string.IsNullOrWhiteSpace(executable))
+            {
+                continue;
+            }
+
+            var arguments = audioOnly ? player.AudioArguments : player.VideoArguments;
+            var resolvedArguments = arguments.Select(arg => arg == "{url}" ? streamUrl : arg);
+            if (TryStartProcess(executable, resolvedArguments, useShellExecute: false))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string? ResolvePlayerExecutable(IEnumerable<string> executableNames, IEnumerable<string> knownLocations)
+    {
+        foreach (var knownLocation in knownLocations)
+        {
+            if (File.Exists(knownLocation))
+            {
+                return knownLocation;
+            }
+        }
+
+        foreach (var executableName in executableNames)
+        {
+            var pathMatch = FindOnPath(executableName);
+            if (!string.IsNullOrWhiteSpace(pathMatch))
+            {
+                return pathMatch;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? FindOnPath(string fileName)
+    {
+        var pathValue = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrWhiteSpace(pathValue))
+        {
+            return null;
+        }
+
+        foreach (var directory in pathValue.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            try
+            {
+                var fullPath = Path.Combine(directory, fileName);
+                if (File.Exists(fullPath))
+                {
+                    return fullPath;
+                }
+            }
+            catch
+            {
+                // Ignore invalid PATH entries.
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<MediaPlayer> GetCandidatePlayers()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            yield return new MediaPlayer(
+                ["vlc.exe"],
+                [
+                    @"C:\Program Files\VideoLAN\VLC\vlc.exe",
+                    @"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe"
+                ],
+                ["{url}"],
+                ["--no-video", "{url}"]);
+
+            yield return new MediaPlayer(["mpv.exe"], [], ["{url}"], ["--no-video", "{url}"]);
+            yield return new MediaPlayer(["mpc-hc64.exe", "mpc-hc.exe"], [], ["{url}"], ["{url}"]);
+            yield return new MediaPlayer(["wmplayer.exe"], [], ["{url}"], ["{url}"]);
+            yield return new MediaPlayer(["potplayermini64.exe", "potplayermini.exe"], [], ["{url}"], ["{url}"]);
+            yield break;
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            yield return new MediaPlayer(
+                ["vlc"],
+                ["/Applications/VLC.app/Contents/MacOS/VLC"],
+                ["{url}"],
+                ["--no-video", "{url}"]);
+            yield return new MediaPlayer(["mpv", "iina"], [], ["{url}"], ["--no-video", "{url}"]);
+            yield break;
+        }
+
+        yield return new MediaPlayer(["vlc"], [], ["{url}"], ["--no-video", "{url}"]);
+        yield return new MediaPlayer(["mpv"], [], ["{url}"], ["--no-video", "{url}"]);
+        yield return new MediaPlayer(["celluloid", "totem"], [], ["{url}"], ["{url}"]);
+    }
+
     private string GetOutputPattern(YouTubeVideo video)
     {
         var safe = string.Concat(video.title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
@@ -336,4 +427,9 @@ public class VideoService
     }
 
     private sealed record DownloadResult(bool Success, string? OutputPath, string? ErrorMessage);
+    private sealed record MediaPlayer(
+        IReadOnlyList<string> ExecutableNames,
+        IReadOnlyList<string> KnownLocations,
+        IReadOnlyList<string> VideoArguments,
+        IReadOnlyList<string> AudioArguments);
 }

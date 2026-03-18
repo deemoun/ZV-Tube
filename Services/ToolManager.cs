@@ -95,12 +95,15 @@ public sealed class ToolManager
         var ffmpegBinary = Path.Combine(ffmpegDir, ffmpegName);
         var ffprobeBinary = Path.Combine(ffmpegDir, ffprobeName);
 
-        if (File.Exists(ffmpegBinary) && File.Exists(ffprobeBinary))
+        if (File.Exists(ffmpegBinary) && File.Exists(ffprobeBinary) && IsUsableFfmpegSuite(ffmpegBinary, ffprobeBinary))
         {
             EnsureExecutablePermission(ffmpegBinary);
             EnsureExecutablePermission(ffprobeBinary);
             return ffmpegDir;
         }
+
+        TryDeleteFile(ffmpegBinary);
+        TryDeleteFile(ffprobeBinary);
 
         var url = await ResolveFfmpegArchiveUrlAsync();
         var archivePath = Path.Combine(ffmpegDir, Path.GetFileName(new Uri(url).LocalPath));
@@ -134,6 +137,11 @@ public sealed class ToolManager
 
         File.Copy(extractedProbe, ffprobeBinary, overwrite: true);
         EnsureExecutablePermission(ffprobeBinary);
+
+        if (!IsUsableFfmpegSuite(ffmpegBinary, ffprobeBinary))
+        {
+            throw new InvalidOperationException("Downloaded FFmpeg binaries are not runnable on this system.");
+        }
 
         var ffplayName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffplay.exe" : "ffplay";
         var extractedPlay = Directory
@@ -188,7 +196,9 @@ public sealed class ToolManager
                 ? "macos64"
                 : "linux64";
 
-        string? bestCandidate = null;
+        string? bestStatic = null;
+        string? bestNonShared = null;
+        string? bestShared = null;
 
         foreach (var asset in assets.EnumerateArray())
         {
@@ -210,13 +220,24 @@ public sealed class ToolManager
                 continue;
             }
 
-            if (bestCandidate is null || name.Contains("-lgpl", StringComparison.OrdinalIgnoreCase))
+            if (name.Contains("static", StringComparison.OrdinalIgnoreCase))
             {
-                bestCandidate = downloadUrl;
+                bestStatic ??= downloadUrl;
+                continue;
             }
+
+            if (!name.Contains("shared", StringComparison.OrdinalIgnoreCase))
+            {
+                bestNonShared ??= downloadUrl;
+                continue;
+            }
+
+            bestShared ??= downloadUrl;
         }
 
-        return bestCandidate
+        return bestStatic
+            ?? bestNonShared
+            ?? bestShared
             ?? throw new InvalidOperationException($"Unable to find a compatible FFmpeg build for platform token '{platformToken}'.");
     }
 
@@ -334,6 +355,52 @@ public sealed class ToolManager
         }
 
         return null;
+    }
+
+    private static bool IsUsableFfmpegSuite(string ffmpegPath, string ffprobePath)
+        => IsBinaryRunnable(ffmpegPath) && IsBinaryRunnable(ffprobePath);
+
+    private static bool IsBinaryRunnable(string binaryPath)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = binaryPath,
+                ArgumentList = { "-version" },
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+
+            if (process is null)
+            {
+                return false;
+            }
+
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void TryDeleteFile(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+        catch
+        {
+            // Ignore failures to clean up old binaries.
+        }
     }
 }
 

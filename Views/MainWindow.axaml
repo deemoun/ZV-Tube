@@ -31,7 +31,7 @@
 
       <TextBlock Grid.Row="2" Margin="0,0,0,8" Text="{Binding Status}"/>
 
-      <Border Grid.Row="3" Margin="0,0,0,8" BorderBrush="#BFBFBF" BorderThickness="1" CornerRadius="4">
+      <Border Grid.Row="3" Margin="0,0,0,8" Classes="SurfaceBase SurfaceCard">
         <DataGrid ItemsSource="{Binding Videos}" SelectedItem="{Binding SelectedVideo}" IsReadOnly="True" AutoGenerateColumns="False" MinHeight="200">
           <DataGrid.Columns>
             <DataGridTextColumn Header="🎬 Title" Binding="{Binding Title}" Width="3*"/>
@@ -42,17 +42,18 @@
         </DataGrid>
       </Border>
 
-      <Border Grid.Row="4" Margin="0,0,0,8" Padding="10" CornerRadius="6" Background="#12000000" BorderBrush="#33000000" BorderThickness="1">
+      <Border Grid.Row="4" Margin="0,0,0,8" Padding="10" Classes="SurfaceBase SurfaceMuted">
         <Grid ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-            <Button Content="🎬 Play video" Command="{Binding PlayVideoCommand}" Background="#22000000"/>
-            <Button Content="🎧 Play audio" Command="{Binding PlayAudioCommand}" Background="#11000000"/>
+            <Button Content="🎬 Play video" Command="{Binding PlayVideoCommand}"/>
+            <Button Content="🎧 Play audio" Command="{Binding PlayAudioCommand}"/>
           </StackPanel>
 
-          <Border Grid.Column="1" Width="1" Height="28" Margin="12,0" Background="#33000000" VerticalAlignment="Center"/>
+          <Border Grid.Column="1" Width="1" Height="28" Margin="12,0"
+                  Background="{DynamicResource SurfaceBorderBrush}" VerticalAlignment="Center"/>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
-            <Button Content="💾 Download audio" Command="{Binding DownloadAudioCommand}" Background="#22000000"/>
+            <Button Content="💾 Download audio" Command="{Binding DownloadAudioCommand}"/>
             <Button Content="📹 Download video" Command="{Binding DownloadVideoCommand}" Background="#2D6CDF" Foreground="White" FontWeight="SemiBold"/>
           </StackPanel>
         </Grid>
@@ -66,7 +67,7 @@
         </Button.Content>
       </Button>
 
-      <Border Grid.Row="6" Padding="8" CornerRadius="4" Background="#0D000000" BorderBrush="#33000000" BorderThickness="1">
+      <Border Grid.Row="6" Padding="8" Classes="SurfaceBase SurfaceMuted">
         <StackPanel Spacing="6">
           <TextBlock Text="Search logs" FontWeight="SemiBold"/>
           <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">

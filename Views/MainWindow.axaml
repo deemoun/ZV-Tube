@@ -12,6 +12,15 @@
       <Setter Property="Padding" Value="12,6"/>
       <Setter Property="MinHeight" Value="34"/>
     </Style>
+    <Style Selector="Button.action-button">
+      <Setter Property="Background" Value="#E6E6E6"/>
+      <Setter Property="Foreground" Value="#1F1F1F"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.action-button:pointerover">
+      <Setter Property="Background" Value="#2D6CDF"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
     <Style Selector="TextBox">
       <Setter Property="Padding" Value="12,6"/>
       <Setter Property="MinHeight" Value="34"/>
@@ -58,16 +67,16 @@
       <Border Grid.Row="4" Margin="0,12,0,0" Padding="10" CornerRadius="6" Background="#12000000" BorderBrush="#22000000" BorderThickness="1">
         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="🎬 Play video" Command="{Binding PlayVideoCommand}" IsEnabled="{Binding HasSelection}"/>
-            <Button Content="🎧 Play audio" Command="{Binding PlayAudioCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Classes="action-button" Content="🎬 Play video" Command="{Binding PlayVideoCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Classes="action-button" Content="🎧 Play audio" Command="{Binding PlayAudioCommand}" IsEnabled="{Binding HasSelection}"/>
           </StackPanel>
 
           <Border Grid.Column="1" Width="1" Height="28" Margin="14,0"
                   Background="{DynamicResource SurfaceBorderBrush}" VerticalAlignment="Center"/>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
-            <Button Content="💾 Download audio" Command="{Binding DownloadAudioCommand}" IsEnabled="{Binding HasSelection}"/>
-            <Button Content="📹 Download video" Command="{Binding DownloadVideoCommand}" IsEnabled="{Binding HasSelection}" Background="#2D6CDF" Foreground="White" FontWeight="SemiBold"/>
+            <Button Classes="action-button" Content="💾 Download audio" Command="{Binding DownloadAudioCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Classes="action-button" Content="📹 Download video" Command="{Binding DownloadVideoCommand}" IsEnabled="{Binding HasSelection}"/>
           </StackPanel>
 
           <TextBlock Grid.Row="1"

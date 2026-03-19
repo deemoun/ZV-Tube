@@ -54,19 +54,26 @@
       </Border>
 
       <Border Grid.Row="4" Margin="0,12,0,0" Padding="10" CornerRadius="6" Background="#12000000" BorderBrush="#22000000" BorderThickness="1">
-        <Grid ColumnDefinitions="Auto,Auto,*">
+        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="🎬 Play video" Command="{Binding PlayVideoCommand}"/>
-            <Button Content="🎧 Play audio" Command="{Binding PlayAudioCommand}"/>
+            <Button Content="🎬 Play video" Command="{Binding PlayVideoCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Content="🎧 Play audio" Command="{Binding PlayAudioCommand}" IsEnabled="{Binding HasSelection}"/>
           </StackPanel>
 
           <Border Grid.Column="1" Width="1" Height="28" Margin="14,0"
                   Background="{DynamicResource SurfaceBorderBrush}" VerticalAlignment="Center"/>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
-            <Button Content="💾 Download audio" Command="{Binding DownloadAudioCommand}"/>
-            <Button Content="📹 Download video" Command="{Binding DownloadVideoCommand}" Background="#2D6CDF" Foreground="White" FontWeight="SemiBold"/>
+            <Button Content="💾 Download audio" Command="{Binding DownloadAudioCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Content="📹 Download video" Command="{Binding DownloadVideoCommand}" IsEnabled="{Binding HasSelection}" Background="#2D6CDF" Foreground="White" FontWeight="SemiBold"/>
           </StackPanel>
+
+          <TextBlock Grid.Row="1"
+                     Grid.ColumnSpan="3"
+                     Margin="0,8,0,0"
+                     Text="Select a video from the list to enable actions."
+                     Opacity="0.8"
+                     IsVisible="{Binding ShowSelectionHint}"/>
         </Grid>
       </Border>
 

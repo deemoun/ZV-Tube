@@ -90,10 +90,16 @@ public class MainWindowViewModel : ObservableObject
         {
             if (SetProperty(ref selectedVideo, value))
             {
+                RaisePropertyChanged(nameof(HasSelection));
+                RaisePropertyChanged(nameof(ShowSelectionHint));
                 NotifySelectionCommands();
             }
         }
     }
+
+    public bool HasSelection => SelectedVideo is not null;
+
+    public bool ShowSelectionHint => !HasSelection;
 
     public bool IsSearching
     {

@@ -54,13 +54,13 @@ jobs:
         shell: bash
         run: |
           bash scripts/build-windows.sh
-          cp artifacts/windows-x64/ZV-Tube.exe artifacts/zv-tube-windows-x64
+          cp artifacts/windows-x64/ZV-Tube.exe artifacts/zv-tube-windows-x64.exe
 
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
           name: windows-binary
-          path: artifacts/zv-tube-windows-x64
+          path: artifacts/zv-tube-windows-x64.exe
 
   draft-release:
     runs-on: ubuntu-latest
@@ -98,7 +98,7 @@ jobs:
         run: |
           gh release create "${{ steps.release_tag.outputs.tag }}" \
             release-assets/ZV-Tube.AppImage \
-            release-assets/zv-tube-windows-x64 \
+            release-assets/zv-tube-windows-x64.exe \
             --draft \
             --target "$GITHUB_SHA" \
             --title "${{ steps.release_tag.outputs.tag }}" \

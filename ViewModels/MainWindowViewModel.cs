@@ -144,11 +144,12 @@ public class MainWindowViewModel : ObservableObject
                     : $"{SearchLogs}{Environment.NewLine}{message}";
             });
 
-            var items = await videoService.SearchAsync(SearchQuery.Trim(), searchCts.Token, log);
-            foreach (var item in items.OrderByDescending(v => v.view_count))
+            var resultsProgress = new Progress<YouTubeVideo>(video =>
             {
-                Videos.Add(item);
-            }
+                Videos.Add(video);
+            });
+
+            await videoService.SearchAsync(SearchQuery.Trim(), searchCts.Token, log, resultsProgress);
 
             Status = Videos.Count == 0 ? "No videos found." : "Search completed.";
         }

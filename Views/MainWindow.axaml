@@ -6,7 +6,8 @@
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
         x:Class="ZVTube.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="ZV Tube">
+        x:Name="Root"
+        Title="{Binding WindowTitle}">
   <Window.Styles>
     <Style Selector="Button">
       <Setter Property="Padding" Value="12,6"/>
@@ -20,24 +21,24 @@
 
   <DockPanel Margin="10">
     <Menu DockPanel.Dock="Top">
-      <MenuItem Header="📁 File">
-        <MenuItem Header="📂 Open download folder" Command="{Binding OpenFolderCommand}"/>
+      <MenuItem Header="{Binding FileMenuHeader}">
+        <MenuItem Header="{Binding OpenDownloadFolderMenuItemLabel}" Command="{Binding OpenFolderCommand}"/>
       </MenuItem>
-      <MenuItem Header="⚙ Actions">
-        <MenuItem Header="🎧 Play audio" Command="{Binding PlayAudioCommand}"/>
-        <MenuItem Header="🎬 Play video" Command="{Binding PlayVideoCommand}"/>
+      <MenuItem Header="{Binding ActionsMenuHeader}">
+        <MenuItem Header="{Binding PlayAudioMenuItemLabel}" Command="{Binding PlayAudioCommand}"/>
+        <MenuItem Header="{Binding PlayVideoMenuItemLabel}" Command="{Binding PlayVideoCommand}"/>
       </MenuItem>
-      <MenuItem Header="🌓 Theme" Command="{Binding ToggleThemeCommand}"/>
-      <MenuItem Header="📄 About" Click="OnAboutClicked"/>
+      <MenuItem Header="{Binding ThemeMenuHeader}" Command="{Binding ToggleThemeCommand}"/>
+      <MenuItem Header="{Binding AboutMenuHeader}" Click="OnAboutClicked"/>
     </Menu>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
       <TextBlock Grid.Row="0" Text="{Binding SearchPrompt}" FontWeight="Bold" FontSize="15"/>
 
       <Grid Grid.Row="1" Margin="0,12,0,0" ColumnDefinitions="*,Auto,Auto">
-        <TextBox Grid.Column="0" Margin="0,0,8,0" Watermark="YouTube search..." Text="{Binding SearchQuery}"/>
+        <TextBox Grid.Column="0" Margin="0,0,8,0" Watermark="{Binding SearchWatermark}" Text="{Binding SearchQuery}"/>
         <Button Grid.Column="1" Margin="0,0,8,0" Content="{Binding SearchButtonText}" Command="{Binding SearchCommand}"/>
-        <Button Grid.Column="2" Content="📁 Open folder" Command="{Binding OpenFolderCommand}"/>
+        <Button Grid.Column="2" Content="{Binding OpenFolderButtonLabel}" Command="{Binding OpenFolderCommand}"/>
       </Grid>
 
       <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*,Auto">
@@ -48,10 +49,10 @@
       <Border Grid.Row="3" Margin="0,12,0,0" BorderBrush="#BFBFBF" BorderThickness="1" CornerRadius="6">
         <DataGrid ItemsSource="{Binding Videos}" SelectedItem="{Binding SelectedVideo}" IsReadOnly="True" AutoGenerateColumns="False" MinHeight="200">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="🎬 Title" Binding="{Binding Title}" Width="3*"/>
-            <DataGridTextColumn Header="📺 Channel" Binding="{Binding Uploader}" Width="2*"/>
-            <DataGridTextColumn Header="👁 Views" Binding="{Binding Views}" Width="*"/>
-            <DataGridTextColumn Header="📅 Date" Binding="{Binding UploadDate}" Width="*"/>
+            <DataGridTextColumn Header="{Binding #Root.DataContext.VideoTitleColumnHeader}" Binding="{Binding Title}" Width="3*"/>
+            <DataGridTextColumn Header="{Binding #Root.DataContext.VideoChannelColumnHeader}" Binding="{Binding Uploader}" Width="2*"/>
+            <DataGridTextColumn Header="{Binding #Root.DataContext.VideoViewsColumnHeader}" Binding="{Binding Views}" Width="*"/>
+            <DataGridTextColumn Header="{Binding #Root.DataContext.VideoDateColumnHeader}" Binding="{Binding UploadDate}" Width="*"/>
           </DataGrid.Columns>
         </DataGrid>
       </Border>
@@ -59,22 +60,22 @@
       <Border Grid.Row="4" Margin="0,12,0,0" Padding="10" CornerRadius="6" Background="#12000000" BorderBrush="#22000000" BorderThickness="1">
         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="🎬 Play video" Command="{Binding PlayVideoCommand}" IsEnabled="{Binding HasSelection}"/>
-            <Button Content="🎧 Play audio" Command="{Binding PlayAudioCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Content="{Binding PlayVideoActionLabel}" Command="{Binding PlayVideoCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Content="{Binding PlayAudioActionLabel}" Command="{Binding PlayAudioCommand}" IsEnabled="{Binding HasSelection}"/>
           </StackPanel>
 
           <Border Grid.Column="1" Width="1" Height="28" Margin="14,0"
                   Background="{DynamicResource SurfaceBorderBrush}" VerticalAlignment="Center"/>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
-            <Button Content="💾 Download audio" Command="{Binding DownloadAudioCommand}" IsEnabled="{Binding HasSelection}"/>
-            <Button Content="📹 Download video" Command="{Binding DownloadVideoCommand}" IsEnabled="{Binding HasSelection}" Background="#2D6CDF" Foreground="White" FontWeight="SemiBold"/>
+            <Button Content="{Binding DownloadAudioActionLabel}" Command="{Binding DownloadAudioCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Content="{Binding DownloadVideoActionLabel}" Command="{Binding DownloadVideoCommand}" IsEnabled="{Binding HasSelection}" Background="#2D6CDF" Foreground="White" FontWeight="SemiBold"/>
           </StackPanel>
 
           <TextBlock Grid.Row="1"
                      Grid.ColumnSpan="3"
                      Margin="0,8,0,0"
-                     Text="Select a video from the list to enable actions."
+                     Text="{Binding SelectionHintText}"
                      Opacity="0.8"
                      IsVisible="{Binding ShowSelectionHint}"/>
         </Grid>
@@ -82,16 +83,14 @@
 
       <Button Grid.Row="5" Margin="0,12,0,0" Command="{Binding ToggleThemeCommand}" HorizontalAlignment="Right">
         <Button.Content>
-          <MultiBinding StringFormat="Theme: {0}">
-            <Binding Path="CurrentThemeLabel"/>
-          </MultiBinding>
+          <Binding Path="ThemeButtonLabel"/>
         </Button.Content>
       </Button>
 
       <Border Grid.Row="6" Margin="0,12,0,0" Padding="8" CornerRadius="4" Background="#0D000000" BorderBrush="#33000000" BorderThickness="1"
               IsVisible="{Binding IsLogsExpanded}">
         <StackPanel Spacing="8">
-          <TextBlock Text="Search logs" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding SearchLogsTitle}" FontWeight="SemiBold"/>
           <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">
             <TextBlock Text="{Binding SearchLogs}" FontFamily="Consolas" TextWrapping="Wrap"/>
           </ScrollViewer>

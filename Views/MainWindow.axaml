@@ -27,7 +27,6 @@
         <MenuItem Header="🎧 Play audio" Command="{Binding PlayAudioCommand}"/>
         <MenuItem Header="🎬 Play video" Command="{Binding PlayVideoCommand}"/>
       </MenuItem>
-      <MenuItem Header="🌓 Theme" Command="{Binding ToggleThemeCommand}"/>
       <MenuItem Header="📄 About" Click="OnAboutClicked"/>
     </Menu>
 
@@ -80,13 +79,11 @@
         </Grid>
       </Border>
 
-      <Button Grid.Row="5" Margin="0,12,0,0" Command="{Binding ToggleThemeCommand}" HorizontalAlignment="Right">
-        <Button.Content>
-          <MultiBinding StringFormat="Theme: {0}">
-            <Binding Path="CurrentThemeLabel"/>
-          </MultiBinding>
-        </Button.Content>
-      </Button>
+      <Button Grid.Row="5"
+              Margin="0,12,0,0"
+              Command="{Binding ToggleThemeCommand}"
+              HorizontalAlignment="Right"
+              Content="{Binding ThemeToggleButtonLabel}"/>
 
       <Border Grid.Row="6" Margin="0,12,0,0" Padding="8" CornerRadius="4" Background="#0D000000" BorderBrush="#33000000" BorderThickness="1"
               IsVisible="{Binding IsLogsExpanded}">

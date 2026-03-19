@@ -20,7 +20,7 @@ public class MainWindowViewModel : ObservableObject
     private string status = string.Empty;
     private string searchLogs = string.Empty;
     private bool isSearching;
-    private bool isLogsExpanded = true;
+    private bool isLogsExpanded = false;
     private YouTubeVideo? selectedVideo;
 
     public MainWindowViewModel(VideoService videoService, SettingsService settingsService, LocalizationService localization)

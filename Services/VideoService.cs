@@ -16,7 +16,11 @@ public class VideoService
         this.settingsService = settingsService;
     }
 
-    public async Task<List<YouTubeVideo>> SearchAsync(string query, CancellationToken cancellationToken, IProgress<string>? logger = null)
+    public async Task<List<YouTubeVideo>> SearchAsync(
+        string query,
+        CancellationToken cancellationToken,
+        IProgress<string>? logger = null,
+        IProgress<YouTubeVideo>? resultProgress = null)
     {
         logger?.Report("Ensuring yt-dlp is available...");
         var ytDlpPath = await toolManager.EnsureYtDlpAsync();
@@ -40,29 +44,31 @@ public class VideoService
         logger?.Report($"Running search for '{query}'...");
 
         using var process = Process.Start(psi) ?? throw new InvalidOperationException("Unable to start yt-dlp.");
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
         try
         {
-            await process.WaitForExitAsync(cancellationToken);
-
-            var stdout = await stdoutTask;
-            var stderr = await stderrTask;
-
-            foreach (var line in stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            while (!process.StandardOutput.EndOfStream)
             {
-                if (line?.TrimStart().StartsWith("{") != true)
+                cancellationToken.ThrowIfCancellationRequested();
+                var line = await process.StandardOutput.ReadLineAsync(cancellationToken);
+                if (string.IsNullOrWhiteSpace(line) || !line.TrimStart().StartsWith("{"))
                 {
                     continue;
                 }
 
                 var video = JsonSerializer.Deserialize<YouTubeVideo>(line);
-                if (video is not null)
+                if (video is null)
                 {
-                    results.Add(video);
+                    continue;
                 }
+
+                results.Add(video);
+                resultProgress?.Report(video);
             }
+
+            await process.WaitForExitAsync(cancellationToken);
+            var stderr = await stderrTask;
 
             logger?.Report($"yt-dlp exited with code {process.ExitCode}. Parsed {results.Count} videos.");
 

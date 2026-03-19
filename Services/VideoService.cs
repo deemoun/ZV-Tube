@@ -134,7 +134,7 @@ public class VideoService
     public async Task<bool> PlayVideoAsync(YouTubeVideo video)
     {
         var ytDlpPath = await toolManager.EnsureYtDlpAsync();
-        var streamUrl = await ResolveStreamUrlAsync(ytDlpPath, video.Url, "bestvideo*+bestaudio/best");
+        var streamUrl = await ResolveStreamUrlAsync(ytDlpPath, video.Url, "best[acodec!=none][vcodec!=none]/best");
         return !string.IsNullOrWhiteSpace(streamUrl) && TryPlayWithInstalledPlayer(streamUrl, audioOnly: false);
     }
 

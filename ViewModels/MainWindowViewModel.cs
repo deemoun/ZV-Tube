@@ -20,6 +20,7 @@ public class MainWindowViewModel : ObservableObject
     private string status = string.Empty;
     private string searchLogs = string.Empty;
     private bool isSearching;
+    private bool isLogsExpanded = true;
     private YouTubeVideo? selectedVideo;
 
     public MainWindowViewModel(VideoService videoService, SettingsService settingsService, LocalizationService localization)
@@ -38,6 +39,7 @@ public class MainWindowViewModel : ObservableObject
         OpenFolderCommand = new RelayCommand(OpenDownloadFolder);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
         OpenInBrowserCommand = new RelayCommand(OpenInBrowser, () => SelectedVideo is not null);
+        ToggleLogsCommand = new RelayCommand(ToggleLogs);
 
         ApplyTheme();
     }
@@ -52,6 +54,7 @@ public class MainWindowViewModel : ObservableObject
     public ICommand OpenFolderCommand { get; }
     public ICommand ToggleThemeCommand { get; }
     public ICommand OpenInBrowserCommand { get; }
+    public ICommand ToggleLogsCommand { get; }
 
     public string SearchLabel => localization.Text("Search");
     public string StopLabel => localization.Text("Stop");
@@ -62,6 +65,7 @@ public class MainWindowViewModel : ObservableObject
     public string PlayVideoLabel => localization.Text("PlayVideo");
     public string DownloadAudioLabel => localization.Text("DownloadAudio");
     public string DownloadVideoLabel => localization.Text("DownloadVideo");
+    public string LogsToggleText => IsLogsExpanded ? "Hide logs" : "Show logs";
 
     public string SearchButtonText => IsSearching ? $"⛔ {StopLabel}" : $"🔎 {SearchLabel}";
 
@@ -103,6 +107,18 @@ public class MainWindowViewModel : ObservableObject
             if (SetProperty(ref isSearching, value))
             {
                 RaisePropertyChanged(nameof(SearchButtonText));
+            }
+        }
+    }
+
+    public bool IsLogsExpanded
+    {
+        get => isLogsExpanded;
+        set
+        {
+            if (SetProperty(ref isLogsExpanded, value))
+            {
+                RaisePropertyChanged(nameof(LogsToggleText));
             }
         }
     }
@@ -223,6 +239,11 @@ public class MainWindowViewModel : ObservableObject
         settings.Theme = settings.Theme.Equals("Dark", StringComparison.OrdinalIgnoreCase) ? "Light" : "Dark";
         settingsService.Save(settings);
         ApplyTheme();
+    }
+
+    private void ToggleLogs()
+    {
+        IsLogsExpanded = !IsLogsExpanded;
     }
 
     private void ApplyTheme()

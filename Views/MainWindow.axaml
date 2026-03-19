@@ -40,7 +40,10 @@
         <Button Grid.Column="2" Content="📁 Open folder" Command="{Binding OpenFolderCommand}"/>
       </Grid>
 
-      <TextBlock Grid.Row="2" Margin="0,12,0,0" Text="{Binding Status}" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+      <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" Text="{Binding Status}" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" VerticalAlignment="Center"/>
+        <Button Grid.Column="1" Content="{Binding LogsToggleText}" Command="{Binding ToggleLogsCommand}" Padding="8,4" MinHeight="28"/>
+      </Grid>
 
       <Border Grid.Row="3" Margin="0,12,0,0" BorderBrush="#BFBFBF" BorderThickness="1" CornerRadius="6">
         <DataGrid ItemsSource="{Binding Videos}" SelectedItem="{Binding SelectedVideo}" IsReadOnly="True" AutoGenerateColumns="False" MinHeight="200">
@@ -78,7 +81,8 @@
         </Button.Content>
       </Button>
 
-      <Border Grid.Row="6" Margin="0,12,0,0" Padding="8" CornerRadius="4" Background="#0D000000" BorderBrush="#33000000" BorderThickness="1">
+      <Border Grid.Row="6" Margin="0,12,0,0" Padding="8" CornerRadius="4" Background="#0D000000" BorderBrush="#33000000" BorderThickness="1"
+              IsVisible="{Binding IsLogsExpanded}">
         <StackPanel Spacing="8">
           <TextBlock Text="Search logs" FontWeight="SemiBold"/>
           <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">

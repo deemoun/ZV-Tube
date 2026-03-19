@@ -2,8 +2,40 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ZVTube.App"
              RequestedThemeVariant="Default">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="SurfaceCardBackgroundBrush" Color="#FAFFFFFF" />
+          <SolidColorBrush x:Key="SurfaceMutedBackgroundBrush" Color="#F3F6F9" />
+          <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#24000000" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="SurfaceCardBackgroundBrush" Color="#E21C1F24" />
+          <SolidColorBrush x:Key="SurfaceMutedBackgroundBrush" Color="#D9222730" />
+          <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#33FFFFFF" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+    <Style Selector="Border.SurfaceBase">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceCardBackgroundBrush}" />
+    </Style>
+
+    <Style Selector="Border.SurfaceCard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceCardBackgroundBrush}" />
+    </Style>
+
+    <Style Selector="Border.SurfaceMuted">
+      <Setter Property="Background" Value="{DynamicResource SurfaceMutedBackgroundBrush}" />
+    </Style>
   </Application.Styles>
 </Application>

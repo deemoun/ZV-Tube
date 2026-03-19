@@ -20,6 +20,7 @@ public class MainWindowViewModel : ObservableObject
     private string status = string.Empty;
     private string searchLogs = string.Empty;
     private bool isSearching;
+    private bool isLogsExpanded = false;
     private YouTubeVideo? selectedVideo;
 
     public MainWindowViewModel(VideoService videoService, SettingsService settingsService, LocalizationService localization)
@@ -29,7 +30,7 @@ public class MainWindowViewModel : ObservableObject
         this.localization = localization;
         settings = settingsService.Load();
 
-        Status = localization.Text("StatusIdle");
+        Status = StatusIdleText;
         SearchCommand = new RelayCommand(SearchOrStop);
         DownloadAudioCommand = new AsyncRelayCommand(DownloadAudioAsync, () => SelectedVideo is not null, HandleCommandError);
         DownloadVideoCommand = new AsyncRelayCommand(DownloadVideoAsync, () => SelectedVideo is not null, HandleCommandError);
@@ -38,6 +39,7 @@ public class MainWindowViewModel : ObservableObject
         OpenFolderCommand = new RelayCommand(OpenDownloadFolder);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
         OpenInBrowserCommand = new RelayCommand(OpenInBrowser, () => SelectedVideo is not null);
+        ToggleLogsCommand = new RelayCommand(ToggleLogs);
 
         ApplyTheme();
     }
@@ -52,16 +54,61 @@ public class MainWindowViewModel : ObservableObject
     public ICommand OpenFolderCommand { get; }
     public ICommand ToggleThemeCommand { get; }
     public ICommand OpenInBrowserCommand { get; }
+    public ICommand ToggleLogsCommand { get; }
+
+    public string WindowTitle => localization.Text("Title");
+    public string FileMenuHeader => localization.Text("MenuFile");
+    public string ActionsMenuHeader => localization.Text("MenuActions");
+    public string ThemeMenuHeader => localization.Text("MenuTheme");
+    public string AboutMenuHeader => localization.Text("MenuAbout");
+    public string OpenDownloadFolderMenuItemLabel => localization.Text("MenuOpenDownloadFolder");
+    public string PlayAudioMenuItemLabel => localization.Text("MenuPlayAudio");
+    public string PlayVideoMenuItemLabel => localization.Text("MenuPlayVideo");
 
     public string SearchLabel => localization.Text("Search");
     public string StopLabel => localization.Text("Stop");
     public string OpenFolderLabel => localization.Text("OpenFolder");
+    public string OpenFolderButtonLabel => $"📁 {OpenFolderLabel}";
     public string SearchPrompt => localization.Text("SearchPrompt");
+    public string SearchWatermark => localization.Text("SearchWatermark");
+
     public string ThemeLabel => localization.Text("Theme");
+    public string ThemeButtonLabel => $"{ThemeLabel}: {CurrentThemeLabel}";
+
     public string PlayAudioLabel => localization.Text("PlayAudio");
     public string PlayVideoLabel => localization.Text("PlayVideo");
     public string DownloadAudioLabel => localization.Text("DownloadAudio");
     public string DownloadVideoLabel => localization.Text("DownloadVideo");
+
+    public string PlayAudioActionLabel => $"🎧 {PlayAudioLabel}";
+    public string PlayVideoActionLabel => $"🎬 {PlayVideoLabel}";
+    public string DownloadAudioActionLabel => $"💾 {DownloadAudioLabel}";
+    public string DownloadVideoActionLabel => $"📹 {DownloadVideoLabel}";
+
+    public string SelectionHintText => localization.Text("SelectionHint");
+    public string SearchLogsTitle => localization.Text("LogsTitle");
+
+    public string VideoTitleColumnHeader => localization.Text("VideoTitleColumn");
+    public string VideoChannelColumnHeader => localization.Text("VideoChannelColumn");
+    public string VideoViewsColumnHeader => localization.Text("VideoViewsColumn");
+    public string VideoDateColumnHeader => localization.Text("VideoDateColumn");
+
+    public string StatusIdleText => localization.Text("StatusIdle");
+    public string StatusStoppingSearchText => localization.Text("StatusStoppingSearch");
+    public string StatusEnterQueryText => localization.Text("StatusEnterQuery");
+    public string StatusSearchingText => localization.Text("StatusSearching");
+    public string StatusNoVideosFoundText => localization.Text("StatusNoVideosFound");
+    public string StatusSearchCompletedText => localization.Text("StatusSearchCompleted");
+    public string StatusSearchStoppedText => localization.Text("StatusSearchStopped");
+    public string StatusDownloadingAudioText => localization.Text("StatusDownloadingAudio");
+    public string StatusDownloadingVideoText => localization.Text("StatusDownloadingVideo");
+    public string StatusUnableOpenFolderText => localization.Text("StatusUnableOpenFolder");
+    public string StatusUnableStartAudioPlayerText => localization.Text("StatusUnableStartAudioPlayer");
+    public string StatusUnableStartVideoPlayerText => localization.Text("StatusUnableStartVideoPlayer");
+
+    public string ShowLogsLabel => localization.Text("ShowLogs");
+    public string HideLogsLabel => localization.Text("HideLogs");
+    public string LogsToggleText => IsLogsExpanded ? HideLogsLabel : ShowLogsLabel;
 
     public string SearchButtonText => IsSearching ? $"⛔ {StopLabel}" : $"🔎 {SearchLabel}";
 
@@ -90,10 +137,16 @@ public class MainWindowViewModel : ObservableObject
         {
             if (SetProperty(ref selectedVideo, value))
             {
+                RaisePropertyChanged(nameof(HasSelection));
+                RaisePropertyChanged(nameof(ShowSelectionHint));
                 NotifySelectionCommands();
             }
         }
     }
+
+    public bool HasSelection => SelectedVideo is not null;
+
+    public bool ShowSelectionHint => !HasSelection;
 
     public bool IsSearching
     {
@@ -107,12 +160,24 @@ public class MainWindowViewModel : ObservableObject
         }
     }
 
+    public bool IsLogsExpanded
+    {
+        get => isLogsExpanded;
+        set
+        {
+            if (SetProperty(ref isLogsExpanded, value))
+            {
+                RaisePropertyChanged(nameof(LogsToggleText));
+            }
+        }
+    }
+
     private void SearchOrStop()
     {
         if (IsSearching)
         {
             searchCts?.Cancel();
-            Status = "Stopping search...";
+            Status = StatusStoppingSearchText;
             return;
         }
 
@@ -123,12 +188,12 @@ public class MainWindowViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(SearchQuery))
         {
-            Status = "Please enter a query.";
+            Status = StatusEnterQueryText;
             return;
         }
 
         IsSearching = true;
-        Status = "Searching...";
+        Status = StatusSearchingText;
         SearchLogs = string.Empty;
         Videos.Clear();
 
@@ -151,11 +216,11 @@ public class MainWindowViewModel : ObservableObject
 
             await videoService.SearchAsync(SearchQuery.Trim(), searchCts.Token, log, resultsProgress);
 
-            Status = Videos.Count == 0 ? "No videos found." : "Search completed.";
+            Status = Videos.Count == 0 ? StatusNoVideosFoundText : StatusSearchCompletedText;
         }
         catch (OperationCanceledException)
         {
-            Status = "Search stopped due to timeout/cancel. If this is the first run, tool download may still be in progress; try again in a few seconds.";
+            Status = StatusSearchStoppedText;
         }
         catch (Exception ex)
         {
@@ -172,14 +237,14 @@ public class MainWindowViewModel : ObservableObject
     private async Task DownloadAudioAsync()
     {
         if (SelectedVideo is null) return;
-        Status = "Downloading audio...";
+        Status = StatusDownloadingAudioText;
         Status = await videoService.DownloadAudioAsync(SelectedVideo);
     }
 
     private async Task DownloadVideoAsync()
     {
         if (SelectedVideo is null) return;
-        Status = "Downloading video...";
+        Status = StatusDownloadingVideoText;
         Status = await videoService.DownloadVideoAsync(SelectedVideo);
     }
 
@@ -189,8 +254,8 @@ public class MainWindowViewModel : ObservableObject
 
         var played = await videoService.PlayAudioAsync(SelectedVideo);
         Status = played
-            ? $"Playing audio: {SelectedVideo.title}"
-            : "Unable to start internal audio player.";
+            ? $"{localization.Text("StatusPlayingAudioPrefix")}: {SelectedVideo.title}"
+            : StatusUnableStartAudioPlayerText;
     }
 
     private async Task PlayVideoAsync()
@@ -199,8 +264,8 @@ public class MainWindowViewModel : ObservableObject
 
         var played = await videoService.PlayVideoAsync(SelectedVideo);
         Status = played
-            ? $"Playing video: {SelectedVideo.title}"
-            : "Unable to start internal video player.";
+            ? $"{localization.Text("StatusPlayingVideoPrefix")}: {SelectedVideo.title}"
+            : StatusUnableStartVideoPlayerText;
     }
 
     private void OpenDownloadFolder()
@@ -208,7 +273,7 @@ public class MainWindowViewModel : ObservableObject
         var opened = videoService.OpenDownloadFolder();
         if (!opened)
         {
-            Status = "Unable to open download folder.";
+            Status = StatusUnableOpenFolderText;
         }
     }
 
@@ -225,6 +290,11 @@ public class MainWindowViewModel : ObservableObject
         ApplyTheme();
     }
 
+    private void ToggleLogs()
+    {
+        IsLogsExpanded = !IsLogsExpanded;
+    }
+
     private void ApplyTheme()
     {
         Application.Current!.RequestedThemeVariant =
@@ -233,11 +303,19 @@ public class MainWindowViewModel : ObservableObject
                 : ThemeVariant.Light;
 
         RaisePropertyChanged(nameof(CurrentThemeLabel));
+        RaisePropertyChanged(nameof(ThemeToggleActionLabel));
+        RaisePropertyChanged(nameof(ThemeToggleButtonLabel));
     }
 
     public string CurrentThemeLabel => settings.Theme.Equals("Dark", StringComparison.OrdinalIgnoreCase)
         ? localization.Text("Dark")
         : localization.Text("Light");
+
+    public string ThemeToggleActionLabel => settings.Theme.Equals("Dark", StringComparison.OrdinalIgnoreCase)
+        ? "Switch to Light"
+        : "Switch to Dark";
+
+    public string ThemeToggleButtonLabel => $"Theme: {CurrentThemeLabel} ({ThemeToggleActionLabel})";
 
     private void NotifySelectionCommands()
     {

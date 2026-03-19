@@ -303,12 +303,19 @@ public class MainWindowViewModel : ObservableObject
                 : ThemeVariant.Light;
 
         RaisePropertyChanged(nameof(CurrentThemeLabel));
-        RaisePropertyChanged(nameof(ThemeButtonLabel));
+        RaisePropertyChanged(nameof(ThemeToggleActionLabel));
+        RaisePropertyChanged(nameof(ThemeToggleButtonLabel));
     }
 
     public string CurrentThemeLabel => settings.Theme.Equals("Dark", StringComparison.OrdinalIgnoreCase)
         ? localization.Text("Dark")
         : localization.Text("Light");
+
+    public string ThemeToggleActionLabel => settings.Theme.Equals("Dark", StringComparison.OrdinalIgnoreCase)
+        ? "Switch to Light"
+        : "Switch to Dark";
+
+    public string ThemeToggleButtonLabel => $"Theme: {CurrentThemeLabel} ({ThemeToggleActionLabel})";
 
     private void NotifySelectionCommands()
     {

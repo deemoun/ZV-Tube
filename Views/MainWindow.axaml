@@ -13,6 +13,15 @@
       <Setter Property="Padding" Value="12,6"/>
       <Setter Property="MinHeight" Value="34"/>
     </Style>
+    <Style Selector="Button.action-button">
+      <Setter Property="Background" Value="#E6E6E6"/>
+      <Setter Property="Foreground" Value="#1F1F1F"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.action-button:pointerover">
+      <Setter Property="Background" Value="#2D6CDF"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
     <Style Selector="TextBox">
       <Setter Property="Padding" Value="12,6"/>
       <Setter Property="MinHeight" Value="34"/>
@@ -28,8 +37,7 @@
         <MenuItem Header="{Binding PlayAudioMenuItemLabel}" Command="{Binding PlayAudioCommand}"/>
         <MenuItem Header="{Binding PlayVideoMenuItemLabel}" Command="{Binding PlayVideoCommand}"/>
       </MenuItem>
-      <MenuItem Header="{Binding ThemeMenuHeader}" Command="{Binding ToggleThemeCommand}"/>
-      <MenuItem Header="{Binding AboutMenuHeader}" Click="OnAboutClicked"/>
+      <MenuItem Header="📄 About" Click="OnAboutClicked"/>
     </Menu>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
@@ -60,16 +68,16 @@
       <Border Grid.Row="4" Margin="0,12,0,0" Padding="10" CornerRadius="6" Background="#12000000" BorderBrush="#22000000" BorderThickness="1">
         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="{Binding PlayVideoActionLabel}" Command="{Binding PlayVideoCommand}" IsEnabled="{Binding HasSelection}"/>
-            <Button Content="{Binding PlayAudioActionLabel}" Command="{Binding PlayAudioCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Classes="action-button" Content="🎬 Play video" Command="{Binding PlayVideoCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Classes="action-button" Content="🎧 Play audio" Command="{Binding PlayAudioCommand}" IsEnabled="{Binding HasSelection}"/>
           </StackPanel>
 
           <Border Grid.Column="1" Width="1" Height="28" Margin="14,0"
                   Background="{DynamicResource SurfaceBorderBrush}" VerticalAlignment="Center"/>
 
           <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
-            <Button Content="{Binding DownloadAudioActionLabel}" Command="{Binding DownloadAudioCommand}" IsEnabled="{Binding HasSelection}"/>
-            <Button Content="{Binding DownloadVideoActionLabel}" Command="{Binding DownloadVideoCommand}" IsEnabled="{Binding HasSelection}" Background="#2D6CDF" Foreground="White" FontWeight="SemiBold"/>
+            <Button Classes="action-button" Content="💾 Download audio" Command="{Binding DownloadAudioCommand}" IsEnabled="{Binding HasSelection}"/>
+            <Button Classes="action-button" Content="📹 Download video" Command="{Binding DownloadVideoCommand}" IsEnabled="{Binding HasSelection}"/>
           </StackPanel>
 
           <TextBlock Grid.Row="1"
@@ -81,11 +89,11 @@
         </Grid>
       </Border>
 
-      <Button Grid.Row="5" Margin="0,12,0,0" Command="{Binding ToggleThemeCommand}" HorizontalAlignment="Right">
-        <Button.Content>
-          <Binding Path="ThemeButtonLabel"/>
-        </Button.Content>
-      </Button>
+      <Button Grid.Row="5"
+              Margin="0,12,0,0"
+              Command="{Binding ToggleThemeCommand}"
+              HorizontalAlignment="Right"
+              Content="{Binding ThemeToggleButtonLabel}"/>
 
       <Border Grid.Row="6" Margin="0,12,0,0" Padding="8" CornerRadius="4" Background="#0D000000" BorderBrush="#33000000" BorderThickness="1"
               IsVisible="{Binding IsLogsExpanded}">

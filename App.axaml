@@ -5,5 +5,40 @@
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+    <!-- DataGrid visual tuning -->
+    <Style Selector="DataGrid.results-grid">
+      <Setter Property="AlternatingRowBackground" Value="#06000000" />
+      <Setter Property="GridLinesVisibility" Value="Horizontal" />
+      <Setter Property="HorizontalGridLinesBrush" Value="#14000000" />
+      <Setter Property="RowHeight" Value="40" />
+    </Style>
+
+    <Style Selector="DataGrid.results-grid DataGridRow">
+      <Setter Property="MinHeight" Value="40" />
+    </Style>
+
+    <Style Selector="DataGrid.results-grid DataGridRow:selected">
+      <Setter Property="Background" Value="#2F3F7AFF" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="DataGrid.results-grid DataGridCell">
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <Style Selector="DataGrid.results-grid DataGridColumnHeader">
+      <Setter Property="Background" Value="#12000000" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <Style Selector="DataGrid.results-grid DataGridRow > DataGridCell:nth-child(3)">
+      <Setter Property="HorizontalContentAlignment" Value="Right" />
+    </Style>
+
+    <Style Selector="DataGrid.results-grid DataGridRow > DataGridCell:nth-child(4)">
+      <Setter Property="HorizontalContentAlignment" Value="Right" />
+    </Style>
   </Application.Styles>
 </Application>

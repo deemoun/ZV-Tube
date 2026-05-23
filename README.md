@@ -57,4 +57,4 @@ pwsh -File scripts/build-windows.ps1
 
 ## Support
 
-If you’d like to support development of ZV Tube, please use the **Funding** button on this repository and consider donating.
+If you’d like to support development of ZV Tube, please use the **Funding** button on this repository and consider tipping.
